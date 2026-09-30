@@ -1387,6 +1387,12 @@
   function recordResult() {
     const none = { kind: '', prevMine: 0 };
     if (!game.player || game.recorded) return none;
+    // A Tectonic game started on the old small boards does not count.
+    const lv = game.mode === 'tectonic' && TEC.LEVELS[game.level];
+    if (lv && (game.width !== lv.width || game.height !== lv.height)) {
+      game.recorded = true;
+      return { kind: 'old-board', prevMine: 0 };
+    }
     const best = bestTime(game.mode, game.level);
     const mine = bestTime(game.mode, game.level, game.player);
     const playedBefore = results
@@ -1465,7 +1471,9 @@
             ? `🎉 Din första tid utan ledtrådar – nu är du med på topplistan!`
             : record.kind === 'hinted'
               ? '💡 Klara den utan ledtrådar för att komma med på topplistan!'
-              : '';
+              : record.kind === 'old-board'
+                ? 'Den här gamla brädstorleken räknas inte till topplistan.'
+                : '';
       $('#win-stars').innerHTML = [1, 2, 3]
         .map((n) => `<span class="${n <= stars ? '' : 'off'}" style="animation-delay:${0.3 + n * 0.2}s">⭐</span>`)
         .join('');
