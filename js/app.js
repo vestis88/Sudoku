@@ -13,7 +13,7 @@
     medium: { label: 'Mellan', icon: '🦊' },
     hard: { label: 'Svår', icon: '🦁' },
   };
-  const MODES = { mini: 'Mini 6×6', classic: 'Klassisk 9×9' };
+  const MODES = { mini: 'Mini 6×6', classic: 'Klassisk 9×9', tectonic: 'Tectonic' };
   // Swedish plural names of the digits, e.g. "Alla femmor".
   const DIGIT_NAMES = ['', 'ettor', 'tvåor', 'treor', 'fyror', 'femmor', 'sexor', 'sjuor', 'åttor', 'nior'];
   const CHEERS = ['Bra jobbat!', 'Grymt!', 'Super!', 'Toppen!', 'Wow!', 'Du är bäst!', 'Fantastiskt!'];
@@ -121,8 +121,45 @@
     store.set(PREF_KEY, prefs);
   }
 
-  function variant() {
-    return S.VARIANTS[game.mode];
+  const TEC = window.Tectonic;
+
+  const RULES = {
+    mini: 'Fyll varje rad, kolumn och block – varje siffra bara en gång!',
+    classic: 'Fyll varje rad, kolumn och block – varje siffra bara en gång!',
+    tectonic: 'Ett block med 3 rutor får 1, 2 och 3. Lika siffror får aldrig nudda varandra – inte ens snett!',
+  };
+
+  function isKnownMode(mode) {
+    return !!S.VARIANTS[mode] || mode === 'tectonic';
+  }
+
+  // "Klassisk 9×9", or "Tectonic 6×6" (its size depends on the level)
+  function modeName(g) {
+    return g.mode === 'tectonic' ? `Tectonic ${g.width}×${g.height}` : MODES[g.mode];
+  }
+
+  /*
+   * The current game's board in one format for sudoku and Tectonic:
+   * width/height, how many numbers there are (digits), which cells affect
+   * each other (peers), the region of every cell and how many of each
+   * number a solved grid holds (needed).
+   */
+  let geoCache = null;
+  function geo() {
+    if (geoCache && geoCache.game === game) return geoCache;
+    let out;
+    if (game.mode === 'tectonic') {
+      const t = TEC.geometry(game.width, game.height, game.regions);
+      out = { width: t.width, height: t.height, cells: t.cells, digits: t.digits, peers: t.peers, needed: t.needed, regionOf: t.unitOf, tectonic: t };
+    } else {
+      const v = S.VARIANTS[game.mode];
+      const g = S.geometry(v);
+      out = { width: v.size, height: v.size, cells: g.cells, digits: v.size, peers: g.peers, needed: new Array(v.size + 1).fill(v.size), regionOf: g.boxOf, variant: v, sudoku: g };
+    }
+    out.game = game;
+    out.peerSets = out.peers.map((p) => new Set(p));
+    geoCache = out;
+    return out;
   }
 
   function elapsedMs() {
@@ -133,7 +170,7 @@
 
   function savedGames() {
     const list = store.get(GAMES_KEY);
-    return Array.isArray(list) ? list.filter((g) => g && g.id && !g.done && S.VARIANTS[g.mode]) : [];
+    return Array.isArray(list) ? list.filter((g) => g && g.id && !g.done && isKnownMode(g.mode)) : [];
   }
 
   // Puts the current game first in the list; finished games are removed.
@@ -186,7 +223,7 @@
 
   function gameSummary(g) {
     const who = g.player ? `${playerLabel(g.player)} · ` : '';
-    return `${who}${MODES[g.mode]} · ${LEVELS[g.level].icon} ${LEVELS[g.level].label}`;
+    return `${who}${modeName(g)} · ${LEVELS[g.level].icon} ${LEVELS[g.level].label}`;
   }
 
   function resumeGame(id) {
@@ -446,6 +483,33 @@
     });
   }
 
+  // Small picture of a Tectonic board: tinted regions with a few numbers.
+  function buildTectonicPreview(el) {
+    const p = TEC.generate('easy', 11);
+    const t = TEC.geometry(p.width, p.height, p.regions);
+    const tints = regionTints(t);
+    el.classList.add('tec');
+    el.style.gridTemplateColumns = `repeat(${p.width}, 1fr)`;
+    el.style.gridTemplateRows = `repeat(${p.height}, 1fr)`;
+    for (let i = 0; i < t.cells; i++) {
+      const cell = document.createElement('span');
+      cell.className = 'pcell tcell';
+      cell.style.setProperty('--tint', `var(--d${tints[t.unitOf[i]]})`);
+      const r = Math.floor(i / p.width);
+      const c = i % p.width;
+      const other = (rr, cc) => rr < 0 || cc < 0 || rr >= p.height || cc >= p.width || t.unitOf[rr * p.width + cc] !== t.unitOf[i];
+      if (other(r - 1, c)) cell.classList.add('et');
+      if (other(r + 1, c)) cell.classList.add('eb');
+      if (other(r, c - 1)) cell.classList.add('el');
+      if (other(r, c + 1)) cell.classList.add('er');
+      if (p.puzzle[i]) {
+        cell.textContent = p.puzzle[i];
+        cell.style.setProperty('--dc', `var(--d${p.puzzle[i]})`);
+      }
+      el.appendChild(cell);
+    }
+  }
+
   function buildPreview(el, v) {
     const g = S.geometry(v);
     el.style.gridTemplateColumns = `repeat(${v.size / v.boxCols}, 1fr)`;
@@ -575,6 +639,7 @@
       card.setAttribute('aria-checked', String(card.dataset.mode === prefs.mode));
     });
     renderPlayers();
+    $('#tagline').textContent = RULES[prefs.mode] || RULES.classic;
     $('.levels').classList.toggle('locked', !prefs.player);
     const games = savedGames();
     $('#continue').hidden = !games.length;
@@ -672,12 +737,14 @@
       toast('Välj vem som spelar först 👆');
       return;
     }
-    const g = S.generate(mode, level);
+    const g = mode === 'tectonic' ? TEC.generate(level) : S.generate(mode, level);
     game = {
       id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       player,
       mode,
       level,
+      // Tectonic boards also carry their own shape
+      ...(mode === 'tectonic' ? { width: g.width, height: g.height, regions: g.regions } : {}),
       puzzle: g.puzzle,
       solution: g.solution,
       values: g.puzzle.slice(),
@@ -705,8 +772,9 @@
     document.body.classList.add('playing');
     const lvl = LEVELS[game.level];
     const who = game.player ? `${playerLabel(game.player)} · ` : '';
-    $('#chip').textContent = `${who}${MODES[game.mode]} · ${lvl.icon} ${lvl.label}`;
+    $('#chip').textContent = `${who}${modeName(game)} · ${lvl.icon} ${lvl.label}`;
     startClock();
+    if (game.mode === 'tectonic' && !game.history.length) toast('Tips: lika siffror får inte nudda varandra – inte ens snett! 👀');
     buildBoard();
     buildPad();
     doneDigits = new Set();
@@ -714,11 +782,71 @@
     saveGame();
   }
 
-  function buildBoard() {
-    const v = variant();
-    const g = S.geometry(v);
+  function makeCell(i) {
+    const cell = document.createElement('button');
+    cell.className = 'cell';
+    cell.dataset.i = i;
+    cell.setAttribute('role', 'gridcell');
+    cell.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      select(i);
+    });
+    cell.addEventListener('click', () => select(i)); // keyboard activation
+    return cell;
+  }
+
+  /*
+   * Tectonic board: one grid of cells. Region borders are drawn thick on the
+   * sides where the neighbouring cell belongs to another region, and regions
+   * get alternating soft tints (no two touching regions share a tint).
+   */
+  function buildTectonicBoard() {
+    const G = geo();
+    const t = G.tectonic;
     const board = $('#board');
     board.innerHTML = '';
+    board.classList.add('tectonic');
+    board.style.setProperty('--n', G.width);
+    board.style.setProperty('--cols', G.width);
+    board.style.setProperty('--rows', G.height);
+    const tints = regionTints(t);
+    cellEls = [];
+    for (let i = 0; i < G.cells; i++) {
+      const cell = makeCell(i);
+      const r = Math.floor(i / G.width);
+      const c = i % G.width;
+      const other = (rr, cc) => rr < 0 || cc < 0 || rr >= G.height || cc >= G.width || t.unitOf[rr * G.width + cc] !== t.unitOf[i];
+      if (other(r - 1, c)) cell.classList.add('et');
+      if (other(r + 1, c)) cell.classList.add('eb');
+      if (other(r, c - 1)) cell.classList.add('el');
+      if (other(r, c + 1)) cell.classList.add('er');
+      cell.style.setProperty('--tint', `var(--d${tints[t.unitOf[i]]})`);
+      cellEls.push(cell);
+      board.appendChild(cell);
+      renderCell(i);
+    }
+    renderHighlights();
+  }
+
+  // Greedy colouring so that regions that touch get different tints.
+  function regionTints(t) {
+    const palette = [1, 4, 6, 7, 2, 5];
+    const tint = [];
+    t.units.forEach((unit, u) => {
+      const used = new Set();
+      unit.forEach((i) => t.neighbors[i].forEach((n) => t.unitOf[n] !== u && tint[t.unitOf[n]] && used.add(tint[t.unitOf[n]])));
+      tint[u] = palette.find((p) => !used.has(p)) || palette[u % palette.length];
+    });
+    return tint;
+  }
+
+  function buildBoard() {
+    if (game.mode === 'tectonic') return buildTectonicBoard();
+    const v = geo().variant;
+    const g = geo().sudoku;
+    const board = $('#board');
+    board.innerHTML = '';
+    board.classList.remove('tectonic');
     board.style.setProperty('--n', v.size);
     board.style.setProperty('--boxes-across', v.size / v.boxCols);
     board.style.setProperty('--boxes-down', v.size / v.boxRows);
@@ -737,15 +865,7 @@
     }
     cellEls = [];
     for (let i = 0; i < g.cells; i++) {
-      const cell = document.createElement('button');
-      cell.className = 'cell';
-      cell.dataset.i = i;
-      cell.setAttribute('role', 'gridcell');
-      cell.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        select(i);
-      });
-      cell.addEventListener('click', () => select(i)); // keyboard activation
+      const cell = makeCell(i);
       cellEls.push(cell);
       boxes[g.boxOf[i]].appendChild(cell);
       renderCell(i);
@@ -754,18 +874,18 @@
   }
 
   function buildPad() {
-    const v = variant();
+    const digits = geo().digits;
     const pad = $('#pad');
     pad.innerHTML = '';
-    pad.style.setProperty('--n', v.size);
-    pad.style.setProperty('--pad-rows', Math.ceil(v.size / 3));
+    pad.style.setProperty('--n', digits);
+    pad.style.setProperty('--pad-rows', Math.ceil(digits / 3));
     const notePad = $('#notes-pad');
     notePad.innerHTML = '';
-    notePad.style.setProperty('--n', v.size);
-    notePad.style.setProperty('--pad-rows', Math.ceil(v.size / 3));
+    notePad.style.setProperty('--n', digits);
+    notePad.style.setProperty('--pad-rows', Math.ceil(digits / 3));
     padEls = {};
     noteEls = {};
-    for (let d = 1; d <= v.size; d++) {
+    for (let d = 1; d <= digits; d++) {
       const btn = document.createElement('button');
       btn.className = 'pad-btn';
       btn.style.setProperty('--dc', `var(--d${d})`);
@@ -805,7 +925,7 @@
     const el = cellEls[i];
     const val = game.values[i];
     const notes = val ? [] : noteDigits(game.notes[i]);
-    const g = S.geometry(variant());
+    const w = geo().width;
     el.textContent = val || '';
     if (notes.length) {
       const [cols, factor] = noteLayout(notes.length);
@@ -829,7 +949,7 @@
     const content = val ? val : notes.length ? `anteckningar ${notes.join(', ')}` : 'tom';
     el.setAttribute(
       'aria-label',
-      `Rad ${g.rowOf[i] + 1}, kolumn ${g.colOf[i] + 1}, ${content}${game.puzzle[i] ? ', låst' : ''}`
+      `Rad ${Math.floor(i / w) + 1}, kolumn ${(i % w) + 1}, ${content}${game.puzzle[i] ? ', låst' : ''}`
     );
   }
 
@@ -838,14 +958,11 @@
   }
 
   function renderHighlights() {
-    const g = S.geometry(variant());
+    const peers = selected >= 0 ? geo().peerSets[selected] : null;
     const selVal = selected >= 0 ? game.values[selected] : 0;
     for (let i = 0; i < cellEls.length; i++) {
       const el = cellEls[i];
-      const related =
-        selected >= 0 &&
-        i !== selected &&
-        (g.rowOf[i] === g.rowOf[selected] || g.colOf[i] === g.colOf[selected] || g.boxOf[i] === g.boxOf[selected]);
+      const related = !!peers && peers.has(i);
       el.classList.toggle('selected', i === selected);
       el.classList.toggle('related', related);
       el.classList.toggle('same', !!selVal && i !== selected && game.values[i] === selVal);
@@ -856,16 +973,16 @@
   }
 
   function countDigits() {
-    const counts = new Array(variant().size + 1).fill(0);
+    const counts = new Array(geo().digits + 1).fill(0);
     for (const v of game.values) counts[v]++;
     return counts;
   }
 
   function updatePad(celebrate) {
-    const size = variant().size;
+    const { digits, needed } = geo();
     const counts = countDigits();
-    for (let d = 1; d <= size; d++) {
-      const left = size - counts[d];
+    for (let d = 1; d <= digits; d++) {
+      const left = needed[d] - counts[d];
       const btn = padEls[d];
       const done = left <= 0;
       btn.querySelector('.left').textContent = done ? '✓' : left;
@@ -980,7 +1097,7 @@
       // number from the notes of its row, column and box.
       game.notes[i] = 0;
       const bit = 1 << v;
-      for (const p of S.geometry(variant()).peers[i]) {
+      for (const p of geo().peers[i]) {
         if (game.notes[p] & bit) {
           game.notes[p] &= ~bit;
           renderCell(p);
@@ -1213,7 +1330,7 @@
     setTimeout(() => {
       if (isRecord) Confetti.record();
       else Confetti.win();
-      const where = `${MODES[game.mode]} · ${lvl.label}`;
+      const where = `${modeName(game)} · ${lvl.label}`;
       $('.win-card').classList.toggle('is-record', isRecord);
       $('#win-banner').hidden = !isRecord;
       $('#win-banner').innerHTML = isRecord ? buildBanner('NYTT REKORD!') : '';
@@ -1239,7 +1356,7 @@
       $('#win-record').hidden = !line;
       $('#win-record').textContent = line;
       $('#win-info').textContent =
-        `${who}${MODES[game.mode]} · ${lvl.icon} ${lvl.label} · ⏱ ${time}` +
+        `${who}${modeName(game)} · ${lvl.icon} ${lvl.label} · ⏱ ${time}` +
         (game.hints ? ` · 💡 ${game.hints} ${game.hints > 1 ? 'ledtrådar' : 'ledtråd'}` : ' · inga ledtrådar!');
       $('#win').hidden = false;
       $('#btn-again').focus();
@@ -1251,7 +1368,7 @@
   function onKey(e) {
     if (!game || $('#game').hidden) return;
     if (!$('#win').hidden) return;
-    const v = variant();
+    const G = geo();
     const key = e.key;
     if ((e.ctrlKey || e.metaKey) && key.toLowerCase() === 'z') {
       e.preventDefault();
@@ -1260,26 +1377,25 @@
     }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const digitKey = /^(?:Digit|Numpad)([1-9])$/.exec(e.code || '');
-    if (e.shiftKey && digitKey && Number(digitKey[1]) <= v.size) {
+    if (e.shiftKey && digitKey && Number(digitKey[1]) <= G.digits) {
       enterNote(Number(digitKey[1]));
-    } else if (/^[1-9]$/.test(key) && Number(key) <= v.size) {
+    } else if (/^[1-9]$/.test(key) && Number(key) <= G.digits) {
       enter(Number(key));
     } else if (key === 'Backspace' || key === 'Delete' || key === '0') {
       erase();
     } else if (key.startsWith('Arrow')) {
       e.preventDefault();
-      const g = S.geometry(v);
       if (selected < 0) {
         select(0);
         return;
       }
-      let r = g.rowOf[selected];
-      let c = g.colOf[selected];
-      if (key === 'ArrowUp') r = (r + v.size - 1) % v.size;
-      if (key === 'ArrowDown') r = (r + 1) % v.size;
-      if (key === 'ArrowLeft') c = (c + v.size - 1) % v.size;
-      if (key === 'ArrowRight') c = (c + 1) % v.size;
-      select(r * v.size + c);
+      let r = Math.floor(selected / G.width);
+      let c = selected % G.width;
+      if (key === 'ArrowUp') r = (r + G.height - 1) % G.height;
+      if (key === 'ArrowDown') r = (r + 1) % G.height;
+      if (key === 'ArrowLeft') c = (c + G.width - 1) % G.width;
+      if (key === 'ArrowRight') c = (c + 1) % G.width;
+      select(r * G.width + c);
     } else if (key.toLowerCase() === 'k' || key.toLowerCase() === 'c') {
       check();
     } else if (key.toLowerCase() === 'l' || key.toLowerCase() === 'h') {
@@ -1302,7 +1418,9 @@
     migrateOldSave();
     applyTheme();
     buildPlayers();
-    document.querySelectorAll('[data-preview]').forEach((el) => buildPreview(el, S.VARIANTS[el.dataset.preview]));
+    document.querySelectorAll('[data-preview]').forEach((el) =>
+      el.dataset.preview === 'tectonic' ? buildTectonicPreview(el) : buildPreview(el, S.VARIANTS[el.dataset.preview])
+    );
 
     document.querySelectorAll('.mode-card').forEach((card) =>
       card.addEventListener('click', () => {

@@ -237,7 +237,7 @@ button:focus-visible {
 
 .modes {
   display: flex;
-  gap: 16px;
+  gap: 10px;
   justify-content: center;
   width: 100%;
   max-width: 460px;
@@ -287,12 +287,12 @@ button:focus-visible {
 }
 
 .mode-name {
-  font-size: 1.5rem;
+  font-size: clamp(1.05rem, 4.6vw, 1.5rem);
   font-weight: 700;
 }
 
 .mode-sub {
-  font-size: 0.9rem;
+  font-size: clamp(0.75rem, 3.2vw, 0.9rem);
   color: var(--muted);
 }
 
@@ -1045,6 +1045,53 @@ button:focus-visible {
   right: 2px;
   font-size: 32%;
 }
+
+/* Tectonic: one grid of cells, thick lines along region borders and a soft
+   tint per region. --tint is set per cell; grown-up themes switch tints off. */
+.board.tectonic {
+  --edge: var(--grid-thick, var(--accent));
+  --line: color-mix(in srgb, var(--ink) 16%, transparent);
+  grid-template-columns: repeat(var(--cols), 1fr);
+  grid-template-rows: repeat(var(--rows), 1fr);
+  gap: 0;
+  padding: 1.6%;
+}
+
+.board.tectonic .cell {
+  --cell: color-mix(in srgb, var(--region-tint, var(--tint)) 14%, var(--card));
+  border-radius: 0;
+  border: 1px solid var(--line);
+}
+
+.board.tectonic .cell.et { border-top: 3px solid var(--edge); }
+.board.tectonic .cell.eb { border-bottom: 3px solid var(--edge); }
+.board.tectonic .cell.el { border-left: 3px solid var(--edge); }
+.board.tectonic .cell.er { border-right: 3px solid var(--edge); }
+
+.board.tectonic .cell.selected {
+  transform: none;
+}
+
+.preview.tec {
+  gap: 0;
+  padding: 3px;
+}
+
+.preview .tcell {
+  display: grid;
+  place-items: center;
+  border-radius: 0;
+  border: 0.5px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  background: color-mix(in srgb, var(--region-tint, var(--tint)) 16%, var(--card));
+  color: var(--dc);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.preview .tcell.et { border-top: 2px solid var(--grid-thick, var(--ink)); }
+.preview .tcell.eb { border-bottom: 2px solid var(--grid-thick, var(--ink)); }
+.preview .tcell.el { border-left: 2px solid var(--grid-thick, var(--ink)); }
+.preview .tcell.er { border-right: 2px solid var(--grid-thick, var(--ink)); }
 
 /* Candidate notes: small italic numbers that shrink as more are added */
 .notes {

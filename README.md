@@ -8,6 +8,9 @@ no build step, no dependencies, works offline and collects no data.
 * **Two board sizes**
   * **Mini 6 × 6**: numbers 1–6 in boxes of 2 rows × 3 columns. Good for younger kids.
   * **Classic 9 × 9**: numbers 1–9 in 3 × 3 boxes.
+* **Tectonic** (also called Suguru): irregular blocks of 1–5 cells, each
+  holding 1 up to its size, and equal numbers may never touch, not even
+  diagonally. Lätt 5×5, Mellan 6×6, Svår 7×7.
 * **Three levels**: Easy 🐣, Medium 🦊 and Hard 🦁. Easy and Medium puzzles can
   always be solved with simple logic, without guessing. Every puzzle has
   exactly one solution.
@@ -64,6 +67,7 @@ npm test           # engine and leaderboard unit tests (Node 18+)
 | ---- | ---- |
 | `js/sudoku.js` | Puzzle engine: generator, solver, difficulty grading |
 | `js/app.js` | Game UI, animations, sounds, saving |
+| `js/tectonic.js` | Tectonic engine: board builder, solver, difficulty grading |
 | `js/leaderboard.js` | Results, statistics and Firestore sync |
 | `js/firebase-config.js` | Firebase project settings (empty = this device only) |
 | `firestore.rules` | Firestore security rules for the leaderboard |

@@ -35,7 +35,7 @@
     <h1 class="logo" aria-label="Sudoku">
       <span class="logo-word" id="logo"></span>
     </h1>
-    <p class="tagline">Fyll varje rad, kolumn och block – varje siffra bara en gång!</p>
+    <p id="tagline" class="tagline"></p>
 
     <button id="continue" class="continue" hidden>
       <span class="continue-icon">▶</span>
@@ -61,6 +61,11 @@
         <span class="mode-name">Klassisk</span>
         <span class="mode-sub">9 × 9 · siffror 1–9</span>
       </button>
+      <button class="mode-card" data-mode="tectonic" role="radio">
+        <span class="preview" data-preview="tectonic"></span>
+        <span class="mode-name">Tectonic</span>
+        <span class="mode-sub">block · siffror 1–5</span>
+      </button>
     </div>
 
     <h2 class="step"><span class="step-num">3</span> Välj nivå och börja</h2>
@@ -79,6 +84,7 @@
       <div class="lb-tabs" role="tablist">
         <button class="lb-tab" data-mode="mini" role="tab">Mini 6×6</button>
         <button class="lb-tab" data-mode="classic" role="tab">Klassisk 9×9</button>
+        <button class="lb-tab" data-mode="tectonic" role="tab">Tectonic</button>
       </div>
       <div id="lb-levels" class="lb-levels"></div>
     </section>
@@ -168,6 +174,7 @@
 
   <script src="js/firebase-config.js"></script>
   <script src="js/sudoku.js"></script>
+  <script src="js/tectonic.js"></script>
   <script src="js/leaderboard.js"></script>
   <script src="js/app.js"></script>
 </body>

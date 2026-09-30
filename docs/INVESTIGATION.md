@@ -178,3 +178,73 @@ game.
 
 Keyboard support on desktop: arrow keys move, `1`–`9` enter, `Backspace` /
 `Delete` / `0` erase, `C` check, `Ctrl+Z` undo.
+
+## 4. Tectonic (Suguru / Kemaru)
+
+### Rules
+
+Tectonic, also sold as Suguru or Kemaru, is played on a grid divided into
+irregular **regions** (blocks) of 1 to 5 cells.
+
+1. A region of N cells contains every number from 1 to N exactly once. A
+   one-cell region is therefore always 1, and no cell can hold a number larger
+   than its region's size.
+2. Equal numbers may never touch: not horizontally, vertically **or
+   diagonally**, and this also applies across region borders. Every cell has
+   up to 8 neighbours.
+3. There is no row or column rule.
+4. A proper puzzle has exactly one solution.
+
+Sources: [dcode](https://www.dcode.fr/tectonic-solver),
+[The Puzzle Labs](https://www.thepuzzlelabs.com/suguru/rules),
+[logic-puzzles-online](https://logic-puzzles-online.com/suguru/),
+[Puzzolve strategies](https://puzzolve.com/intel/suguru-strategies).
+
+### Solving techniques (used to grade difficulty)
+
+| Level | Technique |
+| ----- | --------- |
+| 1 | **Naked single**: a cell has one candidate left (after removing numbers used in its region and by its 8 neighbours). |
+| 1 | **Hidden single**: a number fits in only one cell of its region. |
+| 2 | **Cross-region elimination**: if every possible spot for number d in a region touches cell X (outside that region), X cannot be d. |
+| 2 | **Naked pair**: two cells of a region with the same two candidates hold those numbers, so they are removed from the rest of the region and from any cell touching both. |
+
+### Generation
+
+Drawing random regions first and then looking for a solution fails for most
+boards larger than 6 × 6: the no-touch rule means every 2 × 2 square holds
+four different numbers, and independent region shapes rarely allow that.
+The generator therefore builds regions **and** numbers together with a
+depth-first search:
+
+1. Pick the most boxed-in free cell and grow a region of a random size
+   (weighted towards 4–5 cells) from it.
+2. Number the region 1..N in an order where no number touches an equal one.
+   A look-ahead rejects numberings that leave a free cell with no possible
+   number, or whose smallest possible number is larger than the free area
+   it sits in.
+3. If the rest of the board cannot be completed, undo the region and try
+   another shape (backtracking, with an effort budget).
+
+Clues are then removed one by one while the puzzle stays solvable with the
+level's techniques (or, for Svår, stays uniquely solvable).
+
+| Level | Board | Clues | Needs |
+| ----- | ----- | ----- | ----- |
+| Lätt | 5 × 5 | ~44 % | singles only |
+| Mellan | 6 × 6 | ~30 % | singles plus cross-region eliminations and pairs |
+| Svår | 7 × 7 | as few as possible | any logic (only uniqueness is guaranteed) |
+
+In 100 puzzles per level every puzzle followed the rules and had exactly one
+solution. Generation takes 3–30 ms on average.
+
+### In the app
+
+* The board draws thick lines along region borders and gives regions soft
+  alternating tints (none in the grown-up themes).
+* Selecting a cell highlights its region and its 8 touching cells, the
+  cells that constrain it.
+* The number buttons count how many of each number are still missing (the
+  number of regions with at least that many cells, minus those placed).
+* Notes, check, hints, undo, timer, records, saved games and the leaderboard
+  work the same as for sudoku.

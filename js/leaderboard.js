@@ -24,10 +24,11 @@
     '🦈', '🐢', '🐲', '🤖', '👾', '👑', '🌟', '🍕',
     '🍦', '🍬', '🍭', '🍓', '🌸', '🌻', '🎸', '🏀',
   ];
-  const MODES = ['mini', 'classic'];
+  const MODES = ['mini', 'classic', 'tectonic'];
   const LEVELS = ['easy', 'medium', 'hard'];
   const CACHE_KEY = 'sudoku-fun-results-v1';
   const OUTBOX_KEY = 'sudoku-fun-outbox-v1';
+  const REFUSED_KEY = 'sudoku-fun-refused-v1'; // refused by the server's rules
   const AVATAR_KEY = 'sudoku-fun-avatars-v1';
   const COLLECTION = 'results';
 
@@ -153,18 +154,32 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(toDoc(r)),
       });
-      // 409: already uploaded by an earlier retry. 400/403: refused by the
-      // security rules, so retrying can never succeed and it is dropped.
-      if (!res.ok && ![409, 400, 403].includes(res.status)) throw new Error('Upload failed: ' + res.status);
+      // 409: already uploaded by an earlier retry.
+      if (res.ok || res.status === 409) return 'ok';
+      // 400/403: refused by the security rules (for example a mode the rules
+      // do not list yet). Kept on this device and tried again later.
+      if (res.status === 400 || res.status === 403) return 'refused';
+      throw new Error('Upload failed: ' + res.status);
+    }
+
+    function refused() {
+      return readJSON(REFUSED_KEY, []);
     }
 
     async function flush() {
       if (!enabled) return;
       let pending = outbox();
       for (const r of pending.slice()) {
-        await upload(r);
+        if ((await upload(r)) === 'refused') writeJSON(REFUSED_KEY, refused().concat([r]));
         pending = pending.filter((p) => p.id !== r.id);
         writeJSON(OUTBOX_KEY, pending);
+      }
+    }
+
+    // Results the rules refused earlier may be accepted now.
+    async function retryRefused() {
+      for (const r of refused()) {
+        if ((await upload(r)) === 'ok') writeJSON(REFUSED_KEY, refused().filter((x) => x.id !== r.id));
       }
     }
 
@@ -210,9 +225,10 @@
       status = 'syncing';
       try {
         await flush();
+        await retryRefused();
         const remote = await download();
         const ids = new Set(remote.map((r) => r.id));
-        const merged = remote.concat(outbox().filter((r) => !ids.has(r.id)));
+        const merged = remote.concat(outbox().concat(refused()).filter((r) => !ids.has(r.id)));
         writeJSON(CACHE_KEY, merged);
         status = 'synced';
         return merged;

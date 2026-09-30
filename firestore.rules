@@ -9,7 +9,7 @@ service cloud.firestore {
       allow read: if true;
       allow create: if request.resource.data.keys().hasOnly(['player', 'mode', 'level', 'timeMs', 'hints', 'date'])
         && request.resource.data.player in ['Wille', 'Johan', 'Bim', 'Frans']
-        && request.resource.data.mode in ['mini', 'classic']
+        && request.resource.data.mode in ['mini', 'classic', 'tectonic']
         && request.resource.data.level in ['easy', 'medium', 'hard']
         && request.resource.data.timeMs is int
         && request.resource.data.timeMs >= 5000

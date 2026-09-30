@@ -109,14 +109,20 @@ test('cloud mode queues offline results and uploads them later', async () => {
   const realFetch = fakeFetch;
   const refusing = async (url, opts = {}) => (opts.method === 'POST' ? { ok: false, status: 403 } : realFetch(url, opts));
   const lb2 = Leaderboard.create({ apiKey: 'KEY', projectId: 'demo' }, refusing);
-  lb2.add({ player: 'Bim', mode: 'mini', level: 'easy', timeMs: 100 });
-  await lb2.sync();
+  const refusedResult = lb2.add({ player: 'Bim', mode: 'mini', level: 'easy', timeMs: 100 });
+  const afterRefusal = await lb2.sync();
   assert.equal(lb2.pending(), 0);
   assert.equal(lb2.status(), 'synced');
+  assert.ok(afterRefusal.some((r) => r.id === refusedResult.id), 'refused result still shown on this device');
+
+  // Once the rules accept it, it is uploaded.
+  const lb3 = Leaderboard.create({ apiKey: 'KEY', projectId: 'demo' }, realFetch);
+  await lb3.sync();
+  assert.ok(server.has(refusedResult.id), 'refused result uploaded after the rules allow it');
 
   // A result added on another device shows up after the next sync.
   server.set('other', Leaderboard.toDoc({ player: 'Bim', mode: 'mini', level: 'easy', timeMs: 70000, hints: 0, date: '2026-02-02T00:00:00Z' }));
-  assert.equal((await lb.sync()).length, 2);
+  assert.equal((await lb.sync()).length, 3); // Johan's, the once-refused one and Bim's
 });
 
 test('avatars default per player and can be changed on this device', () => {

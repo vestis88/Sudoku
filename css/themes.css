@@ -143,6 +143,7 @@
   --d9: var(--ink);
   --title-grad: linear-gradient(var(--ink), var(--ink));
   --grad: linear-gradient(var(--accent), var(--accent));
+  --region-tint: var(--card); /* Tectonic regions shown by lines only */
 }
 
 /* Classic sudoku grid: thin lines between cells, thick ones between boxes */
@@ -380,4 +381,12 @@
 [data-theme='elegant'] .preview .pcell.dot,
 [data-theme='plain'] .preview .pcell.dot {
   background: var(--given-bg);
+}
+
+/* Tectonic draws its own lines, so no gaps between cells */
+[data-theme='elegant'] .board.tectonic,
+[data-theme='plain'] .board.tectonic {
+  gap: 0;
+  padding: 0;
+  border: 2px solid var(--grid-thick);
 }
