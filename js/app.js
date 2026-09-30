@@ -19,11 +19,11 @@
 
   // fx: 'full' = all animations and confetti, 'light' = a little, 'none' = no effects.
   const THEMES = [
-    { id: 'color', name: 'Färgglad', icon: '🌈', title: 'Sudoku Kul!', fx: 'full' },
-    { id: 'space', name: 'Rymd', icon: '🚀', title: 'Sudoku Kul!', fx: 'full' },
-    { id: 'candy', name: 'Godis', icon: '🍬', title: 'Sudoku Kul!', fx: 'full' },
-    { id: 'elegant', name: 'Elegant', icon: '🖋️', title: 'Sudoku', fx: 'light' },
-    { id: 'plain', name: 'Enkel', icon: '⬜', title: 'Sudoku', fx: 'none' },
+    { id: 'color', name: 'Färgglad', icon: '🌈', fx: 'full' },
+    { id: 'space', name: 'Rymd', icon: '🚀', fx: 'full' },
+    { id: 'candy', name: 'Godis', icon: '🍬', fx: 'full' },
+    { id: 'elegant', name: 'Elegant', icon: '🖋️', fx: 'light' },
+    { id: 'plain', name: 'Enkel', icon: '⬜', fx: 'none' },
   ];
 
   const $ = (sel) => document.querySelector(sel);
@@ -304,9 +304,7 @@
   function applyTheme() {
     const t = theme();
     document.documentElement.dataset.theme = t.id;
-    document.title = t.title.replace('!', '');
-    $('#logo').parentElement.setAttribute('aria-label', t.title.replace('!', ''));
-    buildLogo(t.title);
+    buildLogo();
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     document.querySelectorAll('.theme-card').forEach((c) => c.setAttribute('aria-checked', String(c.dataset.theme === t.id)));
@@ -339,7 +337,8 @@
     grid.querySelector('[aria-checked="true"]').focus();
   }
 
-  function buildLogo(word = theme().title) {
+  function buildLogo() {
+    const word = 'Sudoku';
     const colors = ['--d1', '--d2', '--d3', '--d4', '--d5', '--d6', '--d7', '--d8'];
     let k = 0;
     $('#logo').innerHTML = '';

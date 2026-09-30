@@ -1,6 +1,6 @@
 # Sudoku Fun 🧩
 
-A colourful, animated sudoku game for kids, in Swedish ("Sudoku Kul"). Plain HTML, CSS and JavaScript:
+A colourful, animated sudoku game for kids, in Swedish. Plain HTML, CSS and JavaScript:
 no build step, no dependencies, works offline and collects no data.
 
 ## Features
