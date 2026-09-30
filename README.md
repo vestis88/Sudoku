@@ -1,6 +1,6 @@
 # Sudoku Fun 🧩
 
-A colourful, animated sudoku game for kids. Plain HTML, CSS and JavaScript:
+A colourful, animated sudoku game for kids, in Swedish ("Sudoku Kul"). Plain HTML, CSS and JavaScript:
 no build step, no dependencies, works offline and collects no data.
 
 ## Features
@@ -20,8 +20,8 @@ no build step, no dependencies, works offline and collects no data.
   progress is saved automatically.
 * Each number has its own colour, and the layout adapts to phones, tablets
   and desktops in portrait and landscape.
-* Keyboard: arrows move, `1`–`9` enter, `Backspace`/`0` erase, `C` check,
-  `H` hint, `Ctrl+Z` undo.
+* Keyboard: arrows move, `1`–`9` enter, `Backspace`/`0` erase, `K` check
+  (Kolla), `L` hint (Ledtråd), `Ctrl+Z` undo.
 
 ## Play
 

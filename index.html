@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="sv">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#8f6bff" />
-  <title>Sudoku Fun</title>
-  <meta name="description" content="A colorful sudoku game for kids with Mini 6×6 and Classic 9×9 boards." />
+  <title>Sudoku Kul</title>
+  <meta name="description" content="Ett färgglatt sudoku för barn med Mini 6×6 och Klassisk 9×9." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -27,64 +27,64 @@
 
   <!-- Start screen -->
   <section id="home" class="screen home">
-    <h1 class="logo" aria-label="Sudoku Fun">
+    <h1 class="logo" aria-label="Sudoku Kul">
       <span class="logo-word" id="logo"></span>
     </h1>
-    <p class="tagline">Fill every row, column and box with each number once!</p>
+    <p class="tagline">Fyll varje rad, kolumn och block – varje siffra bara en gång!</p>
 
     <button id="continue" class="continue" hidden>
       <span class="continue-icon">▶</span>
       <span>
-        <strong>Continue</strong>
+        <strong>Fortsätt</strong>
         <small id="continue-label"></small>
       </span>
     </button>
 
-    <h2 class="step"><span class="step-num">1</span> Pick a board</h2>
-    <div class="modes" role="radiogroup" aria-label="Board size">
+    <h2 class="step"><span class="step-num">1</span> Välj bräde</h2>
+    <div class="modes" role="radiogroup" aria-label="Brädets storlek">
       <button class="mode-card" data-mode="mini" role="radio">
         <span class="preview" data-preview="mini"></span>
         <span class="mode-name">Mini</span>
-        <span class="mode-sub">6 × 6 · numbers 1–6</span>
+        <span class="mode-sub">6 × 6 · siffror 1–6</span>
       </button>
       <button class="mode-card" data-mode="classic" role="radio">
         <span class="preview" data-preview="classic"></span>
-        <span class="mode-name">Classic</span>
-        <span class="mode-sub">9 × 9 · numbers 1–9</span>
+        <span class="mode-name">Klassisk</span>
+        <span class="mode-sub">9 × 9 · siffror 1–9</span>
       </button>
     </div>
 
-    <h2 class="step"><span class="step-num">2</span> Pick a level to start</h2>
+    <h2 class="step"><span class="step-num">2</span> Välj nivå och börja</h2>
     <div class="levels">
-      <button class="level" data-level="easy"><span class="level-icon">🐣</span>Easy<small>★</small></button>
-      <button class="level" data-level="medium"><span class="level-icon">🦊</span>Medium<small>★★</small></button>
-      <button class="level" data-level="hard"><span class="level-icon">🦁</span>Hard<small>★★★</small></button>
+      <button class="level" data-level="easy"><span class="level-icon">🐣</span>Lätt<small>★</small></button>
+      <button class="level" data-level="medium"><span class="level-icon">🦊</span>Mellan<small>★★</small></button>
+      <button class="level" data-level="hard"><span class="level-icon">🦁</span>Svår<small>★★★</small></button>
     </div>
   </section>
 
   <!-- Game screen -->
   <section id="game" class="screen game" hidden>
     <header class="topbar">
-      <button id="btn-home" class="round-btn" aria-label="Home">🏠</button>
+      <button id="btn-home" class="round-btn" aria-label="Hem">🏠</button>
       <div class="topbar-title">
-        <span class="mini-logo">Sudoku Fun</span>
+        <span class="mini-logo">Sudoku Kul</span>
         <span id="chip" class="chip"></span>
       </div>
-      <button id="btn-sound" class="round-btn" aria-label="Sound on">🔊</button>
+      <button id="btn-sound" class="round-btn" aria-label="Ljud på">🔊</button>
     </header>
 
     <main class="play-area">
       <div class="board-wrap">
-        <div id="board" class="board" role="grid" aria-label="Sudoku board"></div>
+        <div id="board" class="board" role="grid" aria-label="Sudokubräde"></div>
       </div>
 
       <div class="controls">
-        <div id="pad" class="pad" aria-label="Numbers"></div>
+        <div id="pad" class="pad" aria-label="Siffror"></div>
         <div class="actions">
-          <button id="btn-undo" class="tool" aria-label="Undo"><span class="tool-icon">↶</span><span class="tool-label">Undo</span></button>
-          <button id="btn-erase" class="tool" aria-label="Erase"><span class="tool-icon">⌫</span><span class="tool-label">Erase</span></button>
-          <button id="btn-hint" class="tool" aria-label="Hint"><span class="tool-icon">💡</span><span class="tool-label">Hint</span></button>
-          <button id="btn-check" class="check-btn"><span class="check-icon">✓</span> Check</button>
+          <button id="btn-undo" class="tool" aria-label="Ångra"><span class="tool-icon">↶</span><span class="tool-label">Ångra</span></button>
+          <button id="btn-erase" class="tool" aria-label="Sudda"><span class="tool-icon">⌫</span><span class="tool-label">Sudda</span></button>
+          <button id="btn-hint" class="tool" aria-label="Ledtråd"><span class="tool-icon">💡</span><span class="tool-label">Ledtråd</span></button>
+          <button id="btn-check" class="check-btn"><span class="check-icon">✓</span> Kolla</button>
         </div>
       </div>
     </main>
@@ -94,12 +94,12 @@
   <div id="win" class="overlay" hidden>
     <div class="win-card" role="dialog" aria-modal="true" aria-labelledby="win-title">
       <div class="win-trophy">🏆</div>
-      <h2 id="win-title">You did it!</h2>
+      <h2 id="win-title">Du klarade det!</h2>
       <div id="win-stars" class="win-stars"></div>
       <p id="win-info" class="win-info"></p>
       <div class="win-actions">
-        <button id="btn-again" class="big-btn">🎲 New puzzle</button>
-        <button id="btn-win-home" class="big-btn secondary">🏠 Change level</button>
+        <button id="btn-again" class="big-btn">🎲 Nytt pussel</button>
+        <button id="btn-win-home" class="big-btn secondary">🏠 Byt nivå</button>
       </div>
     </div>
   </div>

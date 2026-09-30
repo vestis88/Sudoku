@@ -7,12 +7,14 @@
   const PREF_KEY = 'sudoku-fun-prefs-v1';
   const CHECK_MS = 3000;
   const LEVELS = {
-    easy: { label: 'Easy', icon: '🐣' },
-    medium: { label: 'Medium', icon: '🦊' },
-    hard: { label: 'Hard', icon: '🦁' },
+    easy: { label: 'Lätt', icon: '🐣' },
+    medium: { label: 'Mellan', icon: '🦊' },
+    hard: { label: 'Svår', icon: '🦁' },
   };
-  const MODES = { mini: 'Mini 6×6', classic: 'Classic 9×9' };
-  const CHEERS = ['Great job!', 'Awesome!', 'Super!', 'Brilliant!', 'Wow!', 'You rock!', 'Fantastic!'];
+  const MODES = { mini: 'Mini 6×6', classic: 'Klassisk 9×9' };
+  // Swedish plural names of the digits, e.g. "Alla femmor".
+  const DIGIT_NAMES = ['', 'ettor', 'tvåor', 'treor', 'fyror', 'femmor', 'sexor', 'sjuor', 'åttor', 'nior'];
+  const CHEERS = ['Bra jobbat!', 'Grymt!', 'Super!', 'Toppen!', 'Wow!', 'Du är bäst!', 'Fantastiskt!'];
   const SPARKS = ['⭐', '✨', '🌟', '💫', '🎉'];
 
   const $ = (sel) => document.querySelector(sel);
@@ -202,7 +204,7 @@
   /* ---------------- Home screen ---------------- */
 
   function buildLogo() {
-    const word = 'Sudoku Fun!';
+    const word = 'Sudoku Kul!';
     const colors = ['--d1', '--d2', '--d3', '--d4', '--d5', '--d6', '--d7', '--d8'];
     let k = 0;
     $('#logo').innerHTML = '';
@@ -375,7 +377,7 @@
     el.classList.toggle('hinted', game.hinted.includes(i));
     el.setAttribute(
       'aria-label',
-      `Row ${g.rowOf[i] + 1}, column ${g.colOf[i] + 1}, ${val ? val : 'empty'}${game.puzzle[i] ? ', fixed' : ''}`
+      `Rad ${g.rowOf[i] + 1}, kolumn ${g.colOf[i] + 1}, ${val ? val : 'tom'}${game.puzzle[i] ? ', låst' : ''}`
     );
   }
 
@@ -409,7 +411,7 @@
       const done = left <= 0;
       btn.querySelector('.left').textContent = done ? '✓' : left;
       btn.classList.toggle('done', done);
-      btn.setAttribute('aria-label', done ? `${d}, all placed` : `${d}, ${left} left`);
+      btn.setAttribute('aria-label', done ? `${d}, alla placerade` : `${d}, ${left} kvar`);
       if (done && !doneDigits.has(d)) {
         doneDigits.add(d);
         if (celebrate) celebrateDigit(d);
@@ -429,7 +431,7 @@
       cellEls[i].style.setProperty('--i', k++);
       replayAnimation(cellEls[i], 'wave');
     });
-    if (!isSolved()) toast(`All the ${d}s are on the board! ⭐`, 'gold');
+    if (!isSolved()) toast(`Alla ${DIGIT_NAMES[d]} är på brädet! ⭐`, 'gold');
   }
 
   /* ---------------- Actions ---------------- */
@@ -445,13 +447,13 @@
     if (selected < 0) {
       Sound.nope();
       replayAnimation($('#board'), 'wiggle');
-      toast('Tap a square first 👆');
+      toast('Tryck på en ruta först 👆');
       return;
     }
     if (game.puzzle[selected]) {
       Sound.nope();
       replayAnimation(cellEls[selected], 'wiggle');
-      toast('That number is fixed 🔒');
+      toast('Den siffran är låst 🔒');
       return;
     }
     if (game.values[selected] === d) {
@@ -461,7 +463,7 @@
     if (doneDigits.has(d)) {
       Sound.nope();
       replayAnimation(padEls[d], 'wiggle');
-      toast(`All the ${d}s are already used!`);
+      toast(`Alla ${DIGIT_NAMES[d]} är redan använda!`);
       return;
     }
     setValue(selected, d);
@@ -501,7 +503,7 @@
     const full = game.values.every(Boolean);
     if (full && !warnedFull) {
       warnedFull = true;
-      toast('All filled! Some need fixing – press Check ✓');
+      toast('Allt är ifyllt! Några behöver rättas – tryck på Kolla ✓');
     } else if (!full) {
       warnedFull = false;
     }
@@ -521,7 +523,7 @@
     if (!game || game.done) return;
     const last = game.history.pop();
     if (!last) {
-      toast('Nothing to undo');
+      toast('Inget att ångra');
       return;
     }
     selected = last.i;
@@ -546,16 +548,16 @@
       else wrong++;
     });
     if (right + wrong === 0) {
-      toast('Fill in some numbers first! ✏️');
+      toast('Fyll i några siffror först! ✏️');
       return;
     }
     if (wrong === 0) {
       Sound.good();
       const cheer = CHEERS[Math.floor(Math.random() * CHEERS.length)];
-      toast(right === 1 ? `${cheer} That one is right! 🎉` : `${cheer} All ${right} are right! 🎉`, 'good');
+      toast(right === 1 ? `${cheer} Den är rätt! 🎉` : `${cheer} Alla ${right} är rätt! 🎉`, 'good');
     } else {
       Sound.bad();
-      toast(`${right} right, ${wrong} to fix – you can do it! 💪`, 'bad');
+      toast(`${right} rätt, ${wrong} att rätta – du klarar det! 💪`, 'bad');
     }
     checkTimer = setTimeout(clearChecks, CHECK_MS);
   }
@@ -605,7 +607,7 @@
         .join('');
       $('#win-info').textContent =
         `${MODES[game.mode]} · ${lvl.icon} ${lvl.label} · ⏱ ${time}` +
-        (game.hints ? ` · 💡 ${game.hints} hint${game.hints > 1 ? 's' : ''}` : ' · no hints!');
+        (game.hints ? ` · 💡 ${game.hints} ${game.hints > 1 ? 'ledtrådar' : 'ledtråd'}` : ' · inga ledtrådar!');
       $('#win').hidden = false;
       $('#btn-again').focus();
     }, reduceMotion ? 0 : 900);
@@ -642,9 +644,9 @@
       if (key === 'ArrowLeft') c = (c + v.size - 1) % v.size;
       if (key === 'ArrowRight') c = (c + 1) % v.size;
       select(r * v.size + c);
-    } else if (key.toLowerCase() === 'c') {
+    } else if (key.toLowerCase() === 'k' || key.toLowerCase() === 'c') {
       check();
-    } else if (key.toLowerCase() === 'h') {
+    } else if (key.toLowerCase() === 'l' || key.toLowerCase() === 'h') {
       hint();
     } else if (key === 'Escape') {
       selected = -1;
@@ -657,7 +659,7 @@
   function renderSoundButton() {
     const btn = $('#btn-sound');
     btn.textContent = prefs.sound ? '🔊' : '🔇';
-    btn.setAttribute('aria-label', prefs.sound ? 'Sound on' : 'Sound off');
+    btn.setAttribute('aria-label', prefs.sound ? 'Ljud på' : 'Ljud av');
   }
 
   function init() {

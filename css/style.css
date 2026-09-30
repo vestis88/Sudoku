@@ -877,7 +877,8 @@ body.playing .float {
 
 .win-card h2 {
   margin: 8px 0 4px;
-  font-size: 2.3rem;
+  font-size: clamp(1.7rem, 8vw, 2.3rem);
+  white-space: nowrap;
   background: linear-gradient(90deg, var(--d1), var(--d2), var(--d4), var(--d6), var(--d7));
   -webkit-background-clip: text;
   background-clip: text;
@@ -947,6 +948,7 @@ body.playing .float {
   left: 50%;
   top: max(10px, env(safe-area-inset-top));
   z-index: 30;
+  width: max-content;
   max-width: calc(100vw - 32px);
   padding: 10px 20px;
   border-radius: 999px;
