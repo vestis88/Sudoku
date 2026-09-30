@@ -103,50 +103,22 @@ test('cloud mode queues offline results and uploads them later', async () => {
   assert.equal((await lb.sync()).length, 2);
 });
 
-test('firestore.rules allows exactly the avatars the app offers', () => {
-  const rules = require('fs').readFileSync(require('path').join(__dirname, '..', 'firestore.rules'), 'utf8');
-  const m = /request\.resource\.data\.icon in \[([^\]]*)\]/.exec(rules);
-  assert.ok(m, 'avatar list found in rules');
-  const listed = [...m[1].matchAll(/'([^']*)'/g)].map((x) => x[1]);
-  assert.deepEqual(listed, Leaderboard.AVATARS);
-  assert.ok(Leaderboard.AVATARS.includes('🌈'));
-  assert.equal(new Set(Leaderboard.AVATARS).size, Leaderboard.AVATARS.length);
-});
-
-test('avatars default per player, can be changed and sync between devices', async () => {
+test('avatars default per player and can be changed on this device', () => {
   reset();
-  const profiles = new Map();
-  let allowWrites = true;
-  const fakeFetch = async (url, opts = {}) => {
-    const u = new URL(url);
-    if (u.pathname.endsWith('/results')) return { ok: true, status: 200, json: async () => ({}) };
-    if (opts.method === 'PATCH') {
-      if (!allowWrites) return { ok: false, status: 403 };
-      const name = decodeURIComponent(u.pathname.split('/').pop());
-      profiles.set(name, JSON.parse(opts.body));
-      return { ok: true, status: 200 };
-    }
-    const documents = [...profiles].map(([name, d]) => ({ ...d, name: `x/profiles/${encodeURIComponent(name)}` }));
-    return { ok: true, status: 200, json: async () => ({ documents }) };
-  };
-  const lb = Leaderboard.create({ apiKey: 'KEY', projectId: 'demo' }, fakeFetch);
+  const lb = Leaderboard.create({ apiKey: 'KEY', projectId: 'demo' }, async () => {
+    throw new Error('avatars must not use the network');
+  });
+  assert.ok(Leaderboard.AVATARS.includes('🌈'));
+  assert.ok(Leaderboard.AVATARS.includes('🍬'));
+  assert.ok(Leaderboard.AVATARS.includes('🍭'));
+  assert.equal(new Set(Leaderboard.AVATARS).size, Leaderboard.AVATARS.length);
   assert.equal(lb.avatar('Bim'), '🦄');
   assert.equal(lb.setAvatar('Bim', '💩'), false, 'unknown avatar rejected');
   assert.equal(lb.setAvatar('Nobody', '🌈'), false, 'unknown player rejected');
-
-  // Rules not updated yet: choice is kept locally and retried later.
-  allowWrites = false;
   assert.equal(lb.setAvatar('Bim', '🌈'), true);
-  await lb.sync();
   assert.equal(lb.avatar('Bim'), '🌈');
-  assert.equal(profiles.size, 0);
-
-  allowWrites = true;
-  await lb.sync();
-  assert.equal(profiles.get('Bim').fields.icon.stringValue, '🌈');
-
-  // Another device changed Wille's avatar.
-  profiles.set('Wille', { fields: { icon: { stringValue: '🤖' } } });
-  await lb.sync();
-  assert.equal(lb.avatar('Wille'), '🤖');
+  assert.equal(lb.avatar('Wille'), '🦖');
+  // Avatars saved by the earlier synced version are still read.
+  storage['sudoku-fun-avatars-v1'] = JSON.stringify({ Frans: { icon: '🍭', pending: true } });
+  assert.equal(lb.avatar('Frans'), '🍭');
 });

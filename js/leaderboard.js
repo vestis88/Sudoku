@@ -17,7 +17,7 @@
     { name: 'Bim', icon: '🦄', color: '#e0409a' },
     { name: 'Frans', icon: '🐙', color: '#f7801a' },
   ];
-  // Avatars players can pick. Must match the list in firestore.rules.
+  // Avatars players can pick (stored on each device).
   const AVATARS = [
     '🌈', '🦄', '🦖', '🚀', '🐙', '🐱', '🐶', '🦊',
     '🐼', '🐸', '🦁', '🐯', '🐵', '🐧', '🦋', '🐬',
@@ -132,8 +132,9 @@
     const cfg = config || {};
     const enabled = !!(cfg.apiKey && cfg.projectId);
     const doFetch = fetchImpl || (root.fetch && root.fetch.bind(root));
-    const docs = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.projectId)}/databases/(default)/documents`;
-    const base = enabled ? `${docs}/${COLLECTION}` : '';
+    const base = enabled
+      ? `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.projectId)}/databases/(default)/documents/${COLLECTION}`
+      : '';
     let status = enabled ? 'idle' : 'local';
 
     function cache() {
@@ -182,73 +183,30 @@
       return all;
     }
 
-    /* ---------- Avatars: { name: { icon, pending } } ---------- */
+    /* ---------- Avatars: { name: icon }, kept on this device only ---------- */
 
     function avatarCache() {
       return readJSON(AVATAR_KEY, {});
     }
 
     function avatar(name) {
-      const a = avatarCache()[name];
-      if (a && AVATARS.includes(a.icon)) return a.icon;
+      const saved = avatarCache()[name];
+      const icon = saved && saved.icon ? saved.icon : saved; // older format: { icon, pending }
+      if (AVATARS.includes(icon)) return icon;
       const p = PLAYERS.find((x) => x.name === name);
       return p ? p.icon : '';
     }
 
     function setAvatar(name, icon) {
       if (!PLAYERS.some((p) => p.name === name) || !AVATARS.includes(icon)) return false;
-      const all = avatarCache();
-      all[name] = { icon, pending: enabled };
-      writeJSON(AVATAR_KEY, all);
-      if (enabled) pushAvatars().catch(() => {});
+      writeJSON(AVATAR_KEY, Object.assign(avatarCache(), { [name]: icon }));
       return true;
-    }
-
-    // Changes that could not be uploaded stay pending and are retried on the next sync.
-    async function pushAvatars() {
-      for (const [name, a] of Object.entries(avatarCache())) {
-        if (!a.pending) continue;
-        const url = `${docs}/profiles/${encodeURIComponent(name)}?key=${encodeURIComponent(cfg.apiKey)}`;
-        const res = await doFetch(url, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fields: { icon: { stringValue: a.icon } } }),
-        });
-        if (!res.ok) throw new Error('Avatar upload failed: ' + res.status);
-        const now = avatarCache();
-        if (now[name] && now[name].icon === a.icon) {
-          now[name].pending = false;
-          writeJSON(AVATAR_KEY, now);
-        }
-      }
-    }
-
-    async function syncAvatars() {
-      await pushAvatars();
-      const res = await doFetch(`${docs}/profiles?key=${encodeURIComponent(cfg.apiKey)}`);
-      if (!res.ok) throw new Error('Avatar download failed: ' + res.status);
-      const body = await res.json();
-      const all = avatarCache();
-      for (const d of body.documents || []) {
-        const name = decodeURIComponent(d.name.split('/').pop());
-        const icon = d.fields && d.fields.icon && d.fields.icon.stringValue;
-        const local = all[name];
-        if (!PLAYERS.some((p) => p.name === name) || !AVATARS.includes(icon)) continue;
-        if (local && local.pending) continue; // a newer local choice wins
-        all[name] = { icon, pending: false };
-      }
-      writeJSON(AVATAR_KEY, all);
     }
 
     /* Uploads waiting results, then downloads everything. Resolves to all results. */
     async function sync() {
       if (!enabled) return cache();
       status = 'syncing';
-      try {
-        await syncAvatars();
-      } catch (e) {
-        /* avatars are optional; results decide the sync status */
-      }
       try {
         await flush();
         const remote = await download();

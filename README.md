@@ -23,7 +23,7 @@ no build step, no dependencies, works offline and collects no data.
   from the notes in the same row, column and box.
 * **Players and leaderboard**: pick who is playing (Wille, Johan, Bim or
   Frans) before starting. Tap ✏️ on a player to choose an avatar (🌈 and 31
-  more); avatars sync between devices too. Solve times are saved and the start screen shows the
+  more), saved on each device. Solve times are saved and the start screen shows the
   three best times and the number of games played per board size and level.
   Results sync between devices through Firebase; see
   [docs/FIREBASE.md](docs/FIREBASE.md) for the one-time setup.
