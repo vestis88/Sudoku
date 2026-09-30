@@ -27,7 +27,7 @@
   const MODES = ['mini', 'classic', 'tectonic'];
   // Results from before a mode changed its board are left out. Tectonic
   // moved from 5x5-7x7 boards to 9x9 for every level on this date.
-  const RETIRED_BEFORE = { tectonic: '2026-09-30T19:40:00Z' };
+  const RETIRED_BEFORE = { tectonic: '2026-09-30T19:23:00Z' };
 
   function isCurrent(r) {
     const since = RETIRED_BEFORE[r.mode];
