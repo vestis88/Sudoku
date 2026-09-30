@@ -34,7 +34,10 @@ no build step, no dependencies, works offline and collects no data.
   "NYTT REKORD!" celebration with confetti cannons and a fanfare.
 * Undo, erase, hints, confetti when you win, sounds (can be muted), and
   progress is saved automatically.
-* Each number has its own colour, and the layout adapts to phones, tablets
+* **Themes** (🎨 on the start screen): 🌈 Färgglad, 🚀 Rymd and 🍬 Godis for
+  kids, 🖋️ Elegant for grown-ups and ⬜ Enkel, a plain black-and-white look
+  with no animations. The choice is remembered on each device.
+* Each number has its own colour (in the kids' themes), and the layout adapts to phones, tablets
   and desktops in portrait and landscape.
 * Keyboard: arrows move, `1`–`9` enter, `Backspace`/`0` erase, `K` check
   (Kolla), `L` hint (Ledtråd), `Shift`+number adds a note, `Ctrl+Z` undo.
@@ -63,4 +66,5 @@ npm test           # engine and leaderboard unit tests (Node 18+)
 | `js/firebase-config.js` | Firebase project settings (empty = this device only) |
 | `firestore.rules` | Firestore security rules for the leaderboard |
 | `css/style.css` | Styles and responsive layout |
+| `css/themes.css` | Colour themes (Rymd, Godis, Elegant, Enkel) |
 | `docs/INVESTIGATION.md` | Research on sudoku logic, existing libraries and the layout study |

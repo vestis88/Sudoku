@@ -1,0 +1,383 @@
+/*
+ * Themes. The default (🌈 Färgglad) lives in style.css; each theme below
+ * overrides its colour tokens, plus a few rules where colours alone are not
+ * enough. A theme applies to any element with its data-theme attribute:
+ * <html> for the whole app and the small previews in the theme picker.
+ */
+
+/* ---------- 🚀 Rymd: dark space with neon numbers (kids) ---------- */
+[data-theme='space'] {
+  --ink: #eef1ff;
+  --muted: #a9b0d6;
+  --card: #1d2356;
+  --cell: #151a45;
+  --soft: #272e6a;
+  --panel: rgba(29, 35, 86, 0.85);
+  --bg-top: #070b24;
+  --bg-bottom: #1d1250;
+  --accent: #7c5cff;
+  --accent-2: #2bb3ff;
+  --sel: #4a3fb5;
+  --sel-ring: #ffd23f;
+  --related: #20276a;
+  --good: #3ee07b;
+  --good-bg: #134b3a;
+  --bad: #ff5c8a;
+  --bad-bg: #5a1d3d;
+  --gold: #ffd23f;
+  --shadow: 0 6px 0 rgba(0, 0, 0, 0.35), 0 12px 24px rgba(0, 0, 0, 0.35);
+  --box-bg: rgba(255, 255, 255, 0.1);
+  --box-bg-alt: rgba(255, 255, 255, 0.05);
+  --best-bg: #3b3478;
+  --best-ink: #ffd23f;
+  --record-bg: linear-gradient(160deg, #2b2472, #1d2356);
+  --toast-bg: #4a3fb5;
+  --continue-bg: linear-gradient(135deg, #22c38a, #2bb3ff);
+  --lvl-easy: linear-gradient(160deg, #2fd08a, #139a67);
+  --lvl-medium: linear-gradient(160deg, #8f6bff, #5b3fd6);
+  --lvl-hard: linear-gradient(160deg, #ff5c8a, #c02a6b);
+  --blob1: #5b3fd6;
+  --blob2: #1d6fd6;
+  --blob3: #b3399c;
+  --d1: #ff5c8a;
+  --d2: #ff9f43;
+  --d3: #ffd23f;
+  --d4: #3ee07b;
+  --d5: #22d3ee;
+  --d6: #7aa2ff;
+  --d7: #b99bff;
+  --d8: #ff6ad5;
+  --d9: #f5b48a;
+}
+
+[data-theme='space'] .cell.given {
+  background: color-mix(in srgb, var(--dc) 22%, var(--cell));
+  color: var(--dc);
+}
+
+[data-theme='space'] .cell.related.given {
+  background: color-mix(in srgb, var(--dc) 28%, var(--related));
+}
+
+/* A field of twinkling stars behind everything */
+[data-theme='space'] .sky::before,
+[data-theme='space'] .sky::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20px 30px, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 90px 120px, #fff 50%, transparent 51%),
+    radial-gradient(2px 2px at 160px 60px, #ffe9a8 50%, transparent 51%),
+    radial-gradient(1px 1px at 230px 180px, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 60px 200px, #cfe0ff 50%, transparent 51%);
+  background-size: 260px 240px;
+  opacity: 0.8;
+  animation: twinkle-sky 4s ease-in-out infinite;
+}
+
+[data-theme='space'] .sky::after {
+  background-size: 370px 330px;
+  background-position: 120px 80px;
+  animation-delay: -2s;
+}
+
+@keyframes twinkle-sky {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 0.35; }
+}
+
+/* ---------- 🍬 Godis: pastel candy (kids) ---------- */
+[data-theme='candy'] {
+  --ink: #4a2c4f;
+  --muted: #8a6b8f;
+  --card: #fffafd;
+  --cell: #fffafd;
+  --soft: #ffe8f4;
+  --panel: rgba(255, 250, 253, 0.8);
+  --bg-top: #ffe1f0;
+  --bg-bottom: #dcfff3;
+  --accent: #ff5fa2;
+  --accent-2: #a78bfa;
+  --sel: #fff0a8;
+  --sel-ring: #ff9ecb;
+  --related: #ffeaf5;
+  --good: #16a679;
+  --good-bg: #c8f7e6;
+  --bad: #e5386d;
+  --bad-bg: #ffd3e2;
+  --gold: #ffcc4d;
+  --shadow: 0 6px 0 rgba(233, 99, 160, 0.16), 0 12px 24px rgba(167, 139, 250, 0.16);
+  --continue-bg: linear-gradient(135deg, #34d3a4, #5ec8f2);
+  --check-bg: linear-gradient(160deg, #4be0b3, #16a679);
+  --check-shadow: 0 6px 0 #0e7d5a, 0 12px 20px rgba(22, 166, 121, 0.3);
+  --lvl-easy: linear-gradient(160deg, #6fe3c0, #26b98c);
+  --lvl-medium: linear-gradient(160deg, #c3a8ff, #9270f0);
+  --lvl-hard: linear-gradient(160deg, #ff8fc2, #f0528f);
+  --record-bg: linear-gradient(160deg, #fff6fb, #ffe1f0);
+  --blob1: #ffb3d6;
+  --blob2: #b9fbe3;
+  --blob3: #e3d4ff;
+  --d1: #e63e7a;
+  --d2: #f07b3f;
+  --d3: #c99700;
+  --d4: #18a67a;
+  --d5: #1aa6b7;
+  --d6: #5b7cfa;
+  --d7: #a05ce6;
+  --d8: #e04fbf;
+  --d9: #b0643a;
+}
+
+/* ---------- Shared by the two grown-up themes ---------- */
+[data-theme='elegant'],
+[data-theme='plain'] {
+  --d1: var(--ink);
+  --d2: var(--ink);
+  --d3: var(--ink);
+  --d4: var(--ink);
+  --d5: var(--ink);
+  --d6: var(--ink);
+  --d7: var(--ink);
+  --d8: var(--ink);
+  --d9: var(--ink);
+  --title-grad: linear-gradient(var(--ink), var(--ink));
+  --grad: linear-gradient(var(--accent), var(--accent));
+}
+
+/* Classic sudoku grid: thin lines between cells, thick ones between boxes */
+[data-theme='elegant'] .board,
+[data-theme='plain'] .board {
+  gap: 2px;
+  padding: 2px;
+  border-radius: 6px;
+  background: var(--grid-thick);
+}
+
+[data-theme='elegant'] .box,
+[data-theme='plain'] .box,
+[data-theme='elegant'] .box.alt,
+[data-theme='plain'] .box.alt {
+  gap: 1px;
+  padding: 0;
+  border-radius: 0;
+  background: var(--grid-thin);
+}
+
+[data-theme='elegant'] .cell,
+[data-theme='plain'] .cell,
+[data-theme='elegant'] .tp-cell,
+[data-theme='plain'] .tp-cell {
+  border-radius: 0;
+  font-weight: 500;
+}
+
+[data-theme='elegant'] .cell.given,
+[data-theme='plain'] .cell.given {
+  background: var(--given-bg);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+[data-theme='elegant'] .cell.related.given,
+[data-theme='plain'] .cell.related.given {
+  background: color-mix(in srgb, var(--given-bg) 60%, var(--related));
+}
+
+[data-theme='elegant'] .cell.selected,
+[data-theme='plain'] .cell.selected {
+  transform: none;
+  box-shadow: inset 0 0 0 2px var(--sel-ring);
+}
+
+[data-theme='elegant'] .cell.same,
+[data-theme='plain'] .cell.same {
+  box-shadow: inset 0 0 0 2px var(--sel-ring);
+}
+
+[data-theme='elegant'] .pad-btn,
+[data-theme='plain'] .pad-btn {
+  background: var(--cell);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: inset 0 0 0 1.5px var(--grid-thin), 0 2px 0 var(--grid-thin);
+}
+
+[data-theme='elegant'] .pad-btn.done,
+[data-theme='plain'] .pad-btn.done {
+  background: var(--soft);
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1.5px var(--grid-thin);
+}
+
+[data-theme='elegant'] .pad-btn.done::after,
+[data-theme='plain'] .pad-btn.done::after,
+[data-theme='elegant'] .note-btn::before,
+[data-theme='plain'] .note-btn::before,
+[data-theme='elegant'] .player-btn[aria-checked='true'] .player-icon,
+[data-theme='plain'] .player-btn[aria-checked='true'] .player-icon {
+  content: none;
+  animation: none;
+}
+
+[data-theme='elegant'] .note-btn,
+[data-theme='plain'] .note-btn {
+  font-weight: 500;
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--grid-thin);
+}
+
+[data-theme='elegant'] .logo-word span,
+[data-theme='plain'] .logo-word span {
+  animation: none;
+  text-shadow: none;
+}
+
+[data-theme='elegant'] .level-icon,
+[data-theme='plain'] .level-icon,
+[data-theme='elegant'] .sky,
+[data-theme='plain'] .sky {
+  display: none;
+}
+
+[data-theme='elegant'] .continue,
+[data-theme='plain'] .continue {
+  animation: none;
+}
+
+/* ---------- 🖋️ Elegant: warm paper and navy ink (adults) ---------- */
+[data-theme='elegant'] {
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-head: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --ink: #22303c;
+  --muted: #6f675b;
+  --card: #fffdf8;
+  --cell: #fffdf8;
+  --soft: #f1eadc;
+  --panel: rgba(255, 253, 248, 0.85);
+  --bg-top: #f7f2e8;
+  --bg-bottom: #ece4d4;
+  --accent: #1f3a5f;
+  --accent-2: #1f3a5f;
+  --entry: #2563a6;
+  --given-bg: #f1eadc;
+  --grid-thick: #3a4550;
+  --grid-thin: #cfc4b0;
+  --sel: #f6e7bd;
+  --sel-ring: #b8872b;
+  --related: #f5eee0;
+  --good: #2e7d4f;
+  --good-bg: #d8ecdc;
+  --bad: #b3261e;
+  --bad-bg: #f6d8d4;
+  --gold: #b8872b;
+  --shadow: 0 1px 2px rgba(34, 48, 60, 0.08), 0 6px 16px rgba(34, 48, 60, 0.08);
+  --continue-bg: #1f3a5f;
+  --check-bg: #1f3a5f;
+  --check-shadow: 0 3px 0 #0f2238;
+  --lvl-easy: #5f7f6a;
+  --lvl-medium: #a57a2c;
+  --lvl-hard: #8e3b46;
+  --best-bg: #f1eadc;
+  --best-ink: #7a5a1c;
+  --record-bg: linear-gradient(160deg, #fffdf8, #f6ecd5);
+  --toast-bg: #22303c;
+}
+
+/* ---------- ⬜ Enkel: plain black on white, no effects (adults) ---------- */
+[data-theme='plain'] {
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-head: var(--font);
+  --ink: #111111;
+  --muted: #666666;
+  --card: #ffffff;
+  --cell: #ffffff;
+  --soft: #f2f2f2;
+  --panel: #ffffff;
+  --bg-top: #ffffff;
+  --bg-bottom: #ffffff;
+  --accent: #111111;
+  --accent-2: #111111;
+  --entry: #1a56db;
+  --given-bg: #f2f2f2;
+  --grid-thick: #111111;
+  --grid-thin: #c8c8c8;
+  --sel: #dbe7ff;
+  --sel-ring: #1a56db;
+  --related: #f3f6fb;
+  --good: #137333;
+  --good-bg: #dff3e4;
+  --bad: #c5221f;
+  --bad-bg: #fbe0df;
+  --gold: #111111;
+  --shadow: none;
+  --continue-bg: #111111;
+  --check-bg: #111111;
+  --check-shadow: none;
+  --lvl-easy: #111111;
+  --lvl-medium: #111111;
+  --lvl-hard: #111111;
+  --best-bg: #f2f2f2;
+  --best-ink: #111111;
+  --record-bg: #ffffff;
+  --toast-bg: #111111;
+}
+
+/* Flat, bordered controls and no animations at all */
+[data-theme='plain'] .round-btn,
+[data-theme='plain'] .tool,
+[data-theme='plain'] .mode-card,
+[data-theme='plain'] .player-btn,
+[data-theme='plain'] .lb-card,
+[data-theme='plain'] .leaderboard,
+[data-theme='plain'] .timer,
+[data-theme='plain'] .win-card,
+[data-theme='plain'] .picker-card {
+  box-shadow: inset 0 0 0 1px #d0d0d0;
+}
+
+[data-theme='plain'] .board {
+  box-shadow: none;
+}
+
+[data-theme='plain'] .level {
+  box-shadow: none;
+}
+
+[data-theme='plain'] .win-card.is-record {
+  box-shadow: inset 0 0 0 2px #111;
+}
+
+[data-theme='plain'] *,
+[data-theme='plain'] *::before,
+[data-theme='plain'] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Board pictures on the Mini / Klassisk cards, drawn as a plain grid */
+[data-theme='elegant'] .preview,
+[data-theme='plain'] .preview {
+  gap: 2px;
+  padding: 2px;
+  border-radius: 4px;
+  background: var(--grid-thick);
+}
+
+[data-theme='elegant'] .preview .pbox,
+[data-theme='plain'] .preview .pbox {
+  gap: 1px;
+  padding: 0;
+  border-radius: 0;
+  background: var(--grid-thin);
+}
+
+[data-theme='elegant'] .preview .pcell,
+[data-theme='plain'] .preview .pcell {
+  border-radius: 0;
+}
+
+[data-theme='elegant'] .preview .pcell.dot,
+[data-theme='plain'] .preview .pcell.dot {
+  background: var(--given-bg);
+}

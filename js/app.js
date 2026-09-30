@@ -17,6 +17,15 @@
   const CHEERS = ['Bra jobbat!', 'Grymt!', 'Super!', 'Toppen!', 'Wow!', 'Du är bäst!', 'Fantastiskt!'];
   const SPARKS = ['⭐', '✨', '🌟', '💫', '🎉'];
 
+  // fx: 'full' = all animations and confetti, 'light' = a little, 'none' = no effects.
+  const THEMES = [
+    { id: 'color', name: 'Färgglad', icon: '🌈', title: 'Sudoku Kul!', fx: 'full' },
+    { id: 'space', name: 'Rymd', icon: '🚀', title: 'Sudoku Kul!', fx: 'full' },
+    { id: 'candy', name: 'Godis', icon: '🍬', title: 'Sudoku Kul!', fx: 'full' },
+    { id: 'elegant', name: 'Elegant', icon: '🖋️', title: 'Sudoku', fx: 'light' },
+    { id: 'plain', name: 'Enkel', icon: '⬜', title: 'Sudoku', fx: 'none' },
+  ];
+
   const $ = (sel) => document.querySelector(sel);
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -145,7 +154,7 @@
   });
 
   function burst(el, count) {
-    if (reduceMotion) return;
+    if (reduceMotion || theme().fx !== 'full') return;
     const rect = el.getBoundingClientRect();
     const layer = $('#fx');
     for (let k = 0; k < count; k++) {
@@ -169,6 +178,7 @@
   const Confetti = (function () {
     const COLORS = ['#ef476f', '#f7801a', '#ffc93c', '#20a75a', '#0fa9c0', '#3a70f5', '#8b5cf6', '#e0409a'];
     const GOLD = ['#ffc93c', '#ffd95a', '#ffe680', '#f7b500', '#fff3b0'];
+    const SUBTLE = ['#b8872b', '#d9c9a3', '#1f3a5f', '#8e3b46', '#5f7f6a'];
     let parts = [];
     let running = false;
     let ctx = null;
@@ -249,10 +259,23 @@
     return {
       // Normal win: one burst from the middle.
       win() {
+        const fx = theme().fx;
+        if (fx === 'none') return;
+        if (fx === 'light') {
+          burst({ x: innerWidth / 2, y: innerHeight * 0.4, count: 50, angle: -90, spread: 90, power: 13, colors: SUBTLE });
+          return;
+        }
         burst({ x: innerWidth / 2, y: innerHeight * 0.45, count: 180, angle: -90, spread: 120, power: 17, width: 120 });
       },
       // Record: cannons from both bottom corners, three times, plus falling gold stars.
       record() {
+        const fx = theme().fx;
+        if (fx === 'none') return;
+        if (fx === 'light') {
+          burst({ x: 0, y: innerHeight, count: 50, angle: -60, spread: 25, power: 22, colors: SUBTLE });
+          burst({ x: innerWidth, y: innerHeight, count: 50, angle: -120, spread: 25, power: 22, colors: SUBTLE });
+          return;
+        }
         [0, 700, 1400].forEach((delay) =>
           setTimeout(() => {
             burst({ x: 0, y: innerHeight, count: 110, angle: -60, spread: 30, power: 24 });
@@ -272,8 +295,51 @@
 
   /* ---------------- Home screen ---------------- */
 
-  function buildLogo() {
-    const word = 'Sudoku Kul!';
+  /* ---------------- Themes ---------------- */
+
+  function theme() {
+    return THEMES.find((t) => t.id === prefs.theme) || THEMES[0];
+  }
+
+  function applyTheme() {
+    const t = theme();
+    document.documentElement.dataset.theme = t.id;
+    document.title = t.title.replace('!', '');
+    $('#logo').parentElement.setAttribute('aria-label', t.title.replace('!', ''));
+    buildLogo(t.title);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    document.querySelectorAll('.theme-card').forEach((c) => c.setAttribute('aria-checked', String(c.dataset.theme === t.id)));
+  }
+
+  function openThemePicker() {
+    const grid = $('#theme-grid');
+    if (!grid.children.length) {
+      // [number, given?] for the small preview board
+      const sample = [[5, 1], [2, 0], [3, 1], [4, 0], [7, 1], [6, 0], [8, 1], [9, 0], [1, 1]];
+      THEMES.forEach((t) => {
+        const card = document.createElement('button');
+        card.className = 'theme-card';
+        card.dataset.theme = t.id;
+        card.setAttribute('role', 'radio');
+        const cells = sample
+          .map(([d, given]) => `<span class="tp-cell${given ? ' g' : ''}" style="--dc:var(--d${d})">${d}</span>`)
+          .join('');
+        card.innerHTML = `<span class="tp-board">${cells}</span><span class="tp-name">${t.icon} ${t.name}</span>`;
+        card.addEventListener('click', () => {
+          prefs.theme = t.id;
+          savePrefs();
+          applyTheme();
+        });
+        grid.appendChild(card);
+      });
+    }
+    applyTheme();
+    $('#theme-picker').hidden = false;
+    grid.querySelector('[aria-checked="true"]').focus();
+  }
+
+  function buildLogo(word = theme().title) {
     const colors = ['--d1', '--d2', '--d3', '--d4', '--d5', '--d6', '--d7', '--d8'];
     let k = 0;
     $('#logo').innerHTML = '';
@@ -1129,7 +1195,7 @@
   }
 
   function init() {
-    buildLogo();
+    applyTheme();
     buildPlayers();
     document.querySelectorAll('[data-preview]').forEach((el) => buildPreview(el, S.VARIANTS[el.dataset.preview]));
 
@@ -1153,11 +1219,17 @@
     );
     window.addEventListener('online', refreshLeaderboard);
     $('#picker-close').addEventListener('click', closePicker);
+    $('#btn-theme').addEventListener('click', openThemePicker);
+    $('#theme-close').addEventListener('click', () => ($('#theme-picker').hidden = true));
+    $('#theme-picker').addEventListener('click', (e) => {
+      if (e.target.id === 'theme-picker') $('#theme-picker').hidden = true;
+    });
     $('#avatar-picker').addEventListener('click', (e) => {
       if (e.target.id === 'avatar-picker') closePicker(); // tap outside the card
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !$('#avatar-picker').hidden) closePicker();
+      if (e.key === 'Escape') $('#theme-picker').hidden = true;
     });
     $('#continue').addEventListener('click', () => {
       const saved = store.get(SAVE_KEY);

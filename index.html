@@ -8,9 +8,19 @@
   <meta name="description" content="Ett färgglatt sudoku för barn med Mini 6×6 och Klassisk 9×9." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>" />
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/themes.css" />
+  <script>
+    // Apply the saved theme before the page is drawn, so it never flashes.
+    try {
+      document.documentElement.dataset.theme =
+        (JSON.parse(localStorage.getItem('sudoku-fun-prefs-v1')) || {}).theme || 'color';
+    } catch (e) {
+      document.documentElement.dataset.theme = 'color';
+    }
+  </script>
 </head>
 <body>
   <div class="sky" aria-hidden="true">
@@ -21,6 +31,7 @@
 
   <!-- Start screen -->
   <section id="home" class="screen home">
+    <button id="btn-theme" class="round-btn theme-btn" aria-label="Välj tema">🎨</button>
     <h1 class="logo" aria-label="Sudoku Kul">
       <span class="logo-word" id="logo"></span>
     </h1>
@@ -120,6 +131,15 @@
         <button id="btn-again" class="big-btn">🎲 Nytt pussel</button>
         <button id="btn-win-home" class="big-btn secondary">🏠 Byt nivå</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Theme picker -->
+  <div id="theme-picker" class="overlay" hidden>
+    <div class="picker-card" role="dialog" aria-modal="true" aria-labelledby="theme-title">
+      <h2 id="theme-title">Välj tema</h2>
+      <div id="theme-grid" class="theme-grid" role="radiogroup" aria-label="Teman"></div>
+      <button id="theme-close" class="big-btn secondary">Stäng</button>
     </div>
   </div>
 

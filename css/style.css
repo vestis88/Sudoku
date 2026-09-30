@@ -1,4 +1,7 @@
-:root {
+/* Base theme (Färgglad). Every [data-theme] element re-computes these, so
+   theme previews work anywhere on the page. Other themes: css/themes.css */
+:root,
+[data-theme] {
   --font: 'Fredoka', 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
   --ink: #2b2d42;
   --muted: #6b7090;
@@ -16,6 +19,28 @@
   --bad-bg: #ffd1da;
   --gold: #ffc93c;
   --shadow: 0 6px 0 rgba(43, 45, 66, 0.12), 0 12px 24px rgba(43, 45, 66, 0.1);
+  --font-head: var(--font);
+  --cell: #ffffff;
+  --soft: #eef1ff;
+  --panel: rgba(255, 255, 255, 0.7);
+  --grad: linear-gradient(135deg, var(--accent), var(--accent-2));
+  --title-grad: linear-gradient(90deg, var(--d1), var(--d2), var(--d4), var(--d6), var(--d7));
+  --box-bg: rgba(255, 255, 255, 0.4);
+  --box-bg-alt: rgba(255, 255, 255, 0.22);
+  --continue-bg: linear-gradient(135deg, #21c07a, #0fa9c0);
+  --check-bg: linear-gradient(160deg, #3ddc84, var(--good));
+  --check-shadow: 0 6px 0 #137a43, 0 12px 20px rgba(31, 174, 98, 0.3);
+  --lvl-easy: linear-gradient(160deg, #3ddc84, #1fae62);
+  --lvl-medium: linear-gradient(160deg, #ffb347, #f7801a);
+  --lvl-hard: linear-gradient(160deg, #ff7a9a, #e63956);
+  --best-bg: #fff3c4;
+  --best-ink: #a06b00;
+  --record-bg: linear-gradient(160deg, #fffbea, #fff1c2);
+  --toast-bg: var(--ink);
+  --blob1: #ffc6e0;
+  --blob2: #c7e8ff;
+  --blob3: #d9ffcf;
+  --entry: initial; /* grown-up themes colour typed answers; others use the digit colour */
 
   /* One colour per number */
   --d1: #ef476f;
@@ -54,6 +79,14 @@ body {
   -webkit-user-select: none;
 }
 
+h1,
+h2,
+.mode-name,
+.lb-level,
+.record-banner {
+  font-family: var(--font-head);
+}
+
 button {
   font-family: inherit;
   color: inherit;
@@ -86,9 +119,9 @@ button:focus-visible {
   animation: drift 25s ease-in-out infinite;
 }
 
-.b1 { background: #ffc6e0; top: -15vmax; left: -10vmax; }
-.b2 { background: #c7e8ff; bottom: -18vmax; right: -12vmax; animation-delay: -8s; }
-.b3 { background: #d9ffcf; top: 40%; left: 40%; width: 25vmax; height: 25vmax; animation-delay: -15s; }
+.b1 { background: var(--blob1); top: -15vmax; left: -10vmax; }
+.b2 { background: var(--blob2); bottom: -18vmax; right: -12vmax; animation-delay: -8s; }
+.b3 { background: var(--blob3); top: 40%; left: 40%; width: 25vmax; height: 25vmax; animation-delay: -15s; }
 
 @keyframes drift {
   0%, 100% { transform: translate(0, 0) rotate(0deg); }
@@ -174,7 +207,7 @@ button:focus-visible {
   padding: 12px 26px 12px 14px;
   border: none;
   border-radius: 999px;
-  background: linear-gradient(135deg, #21c07a, #0fa9c0);
+  background: var(--continue-bg);
   color: #fff;
   font-size: 1.2rem;
   text-align: left;
@@ -271,7 +304,7 @@ button:focus-visible {
   gap: 4px;
   padding: 5px;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: var(--grad);
 }
 
 .preview .pbox {
@@ -279,12 +312,12 @@ button:focus-visible {
   gap: 2px;
   padding: 2px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--box-bg);
 }
 
 .preview .pcell {
   border-radius: 3px;
-  background: #fff;
+  background: var(--cell);
 }
 
 .preview .pcell.dot {
@@ -326,9 +359,9 @@ button:focus-visible {
   transform: translateY(-3px) rotate(-2deg);
 }
 
-.level[data-level='easy'] { background: linear-gradient(160deg, #3ddc84, #1fae62); }
-.level[data-level='medium'] { background: linear-gradient(160deg, #ffb347, #f7801a); }
-.level[data-level='hard'] { background: linear-gradient(160deg, #ff7a9a, #e63956); }
+.level[data-level='easy'] { background: var(--lvl-easy); }
+.level[data-level='medium'] { background: var(--lvl-medium); }
+.level[data-level='hard'] { background: var(--lvl-hard); }
 
 .level-icon {
   font-size: 2.3rem;
@@ -384,7 +417,7 @@ button:focus-visible {
 
 .player-btn[aria-checked='true'] {
   border-color: var(--pc);
-  background: color-mix(in srgb, var(--pc) 16%, white);
+  background: color-mix(in srgb, var(--pc) 16%, var(--cell));
   transform: translateY(-3px) scale(1.05);
 }
 
@@ -402,7 +435,7 @@ button:focus-visible {
   padding: 0;
   border: 2px solid var(--pc);
   border-radius: 50%;
-  background: #fff;
+  background: var(--cell);
   font-size: 0.95rem;
   box-shadow: 0 2px 6px rgba(43, 45, 66, 0.25);
   transition: transform 0.15s;
@@ -410,6 +443,71 @@ button:focus-visible {
 
 .player-edit:active {
   transform: scale(0.88);
+}
+
+/* Theme button and picker */
+.theme-btn {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  font-size: 1.25rem;
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 3px solid transparent;
+  border-radius: 18px;
+  background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+  color: var(--ink);
+  font-family: var(--font);
+  box-shadow: var(--shadow);
+}
+
+.theme-card[aria-checked='true'] {
+  border-color: var(--sel-ring);
+}
+
+.tp-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--grid-thick, var(--grad));
+}
+
+.tp-cell {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background: var(--cell);
+  color: var(--entry, var(--dc));
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.tp-cell.g {
+  background: var(--given-bg, color-mix(in srgb, var(--dc) 20%, var(--cell)));
+  color: var(--dc);
+}
+
+.tp-name {
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 /* Avatar picker */
@@ -442,7 +540,7 @@ button:focus-visible {
   padding: 0;
   border: none;
   border-radius: 16px;
-  background: #f3f4fb;
+  background: var(--soft);
   font-size: 1.9rem;
   line-height: 1;
   animation: pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) both;
@@ -454,7 +552,7 @@ button:focus-visible {
 }
 
 .avatar-option[aria-checked='true'] {
-  background: color-mix(in srgb, var(--pc) 22%, white);
+  background: color-mix(in srgb, var(--pc) 22%, var(--cell));
   box-shadow: inset 0 0 0 3px var(--pc);
 }
 
@@ -478,7 +576,7 @@ button:focus-visible {
   margin-top: 18px;
   padding: 16px 12px;
   border-radius: 26px;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--panel);
   box-shadow: var(--shadow);
 }
 
@@ -514,7 +612,7 @@ button:focus-visible {
   margin: 12px 0;
   padding: 4px;
   border-radius: 999px;
-  background: #eef1ff;
+  background: var(--soft);
 }
 
 .lb-tab {
@@ -529,7 +627,7 @@ button:focus-visible {
 }
 
 .lb-tab[aria-selected='true'] {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: var(--grad);
   color: #fff;
   box-shadow: 0 3px 8px rgba(143, 107, 255, 0.35);
 }
@@ -565,7 +663,7 @@ button:focus-visible {
 .lb-count {
   padding: 2px 10px;
   border-radius: 999px;
-  background: #eef1ff;
+  background: var(--soft);
   color: var(--muted);
   font-size: 0.85rem;
   font-weight: 600;
@@ -586,7 +684,7 @@ button:focus-visible {
   gap: 8px;
   padding: 5px 8px;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--pc) 10%, white);
+  background: color-mix(in srgb, var(--pc) 10%, var(--cell));
 }
 
 .lb-best li.me {
@@ -629,7 +727,7 @@ button:focus-visible {
 .lb-chip {
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--pc) 14%, white);
+  background: color-mix(in srgb, var(--pc) 14%, var(--cell));
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -678,7 +776,7 @@ button:focus-visible {
 .mini-logo {
   font-size: 1.4rem;
   font-weight: 700;
-  background: linear-gradient(90deg, var(--d1), var(--d2), var(--d4), var(--d6), var(--d7));
+  background: var(--title-grad);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -704,8 +802,8 @@ button:focus-visible {
 .timer-best {
   padding: 1px 8px;
   border-radius: 999px;
-  background: #fff3c4;
-  color: #a06b00;
+  background: var(--best-bg);
+  color: var(--best-ink);
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -742,7 +840,7 @@ button:focus-visible {
   gap: 1.1%;
   padding: 1.2%;
   border-radius: 18px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: var(--grad);
   box-shadow: var(--shadow);
 }
 
@@ -755,11 +853,11 @@ button:focus-visible {
   min-width: 0;
   min-height: 0;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--box-bg);
 }
 
 .box.alt {
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--box-bg-alt);
 }
 
 .cell {
@@ -770,8 +868,8 @@ button:focus-visible {
   padding: 0;
   border: none;
   border-radius: 22%;
-  background: #fff;
-  color: var(--dc);
+  background: var(--cell);
+  color: var(--entry, var(--dc));
   font-weight: 700;
   font-size: calc(100cqi / var(--n) * 0.56);
   line-height: 1;
@@ -781,7 +879,7 @@ button:focus-visible {
 }
 
 .cell.given {
-  background: color-mix(in srgb, var(--dc) 20%, white);
+  background: color-mix(in srgb, var(--dc) 20%, var(--cell));
   color: color-mix(in srgb, var(--dc) 82%, black);
   cursor: default;
 }
@@ -791,7 +889,7 @@ button:focus-visible {
 }
 
 .cell.related.given {
-  background: color-mix(in srgb, var(--dc) 26%, #e6e9ff);
+  background: color-mix(in srgb, var(--dc) 26%, var(--related));
 }
 
 .cell.same {
@@ -836,7 +934,7 @@ button:focus-visible {
 }
 
 .note.hl {
-  background: color-mix(in srgb, var(--dc) 25%, white);
+  background: color-mix(in srgb, var(--dc) 25%, var(--cell));
   box-shadow: 0 0 0 1px var(--dc);
 }
 
@@ -973,7 +1071,7 @@ button:focus-visible {
   height: 22px;
   padding: 0 5px;
   border-radius: 11px;
-  background: #fff;
+  background: var(--cell);
   color: var(--dc);
   font-size: 0.8rem;
   line-height: 22px;
@@ -1038,12 +1136,12 @@ button:focus-visible {
   padding: 0;
   border: none;
   border-radius: 12px;
-  background: #fff;
+  background: var(--cell);
   color: var(--dc);
   font-size: clamp(0.95rem, calc(28vw / var(--n, 9)), 1.5rem);
   font-style: italic;
   font-weight: 600;
-  box-shadow: inset 0 0 0 2px var(--dc), 0 3px 0 color-mix(in srgb, var(--dc) 45%, white);
+  box-shadow: inset 0 0 0 2px var(--dc), 0 3px 0 color-mix(in srgb, var(--dc) 45%, var(--cell));
   transition: transform 0.1s, opacity 0.2s;
 }
 
@@ -1107,11 +1205,11 @@ button:focus-visible {
   min-height: 60px;
   border: none;
   border-radius: 18px;
-  background: linear-gradient(160deg, #3ddc84, var(--good));
+  background: var(--check-bg);
   color: #fff;
   font-size: 1.35rem;
   font-weight: 700;
-  box-shadow: 0 6px 0 #137a43, 0 12px 20px rgba(31, 174, 98, 0.3);
+  box-shadow: var(--check-shadow);
   transition: transform 0.1s;
 }
 
@@ -1292,7 +1390,7 @@ button:focus-visible {
   margin: 8px 0 4px;
   font-size: clamp(1.7rem, 8vw, 2.3rem);
   white-space: nowrap;
-  background: linear-gradient(90deg, var(--d1), var(--d2), var(--d4), var(--d6), var(--d7));
+  background: var(--title-grad);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1316,7 +1414,7 @@ button:focus-visible {
 /* New personal record: gold card with bouncing rainbow banner */
 .win-card.is-record {
   position: relative;
-  background: linear-gradient(160deg, #fffbea, #fff1c2);
+  background: var(--record-bg);
   box-shadow: 0 0 0 5px var(--gold), 0 0 40px 8px rgba(255, 201, 60, 0.75), var(--shadow);
   animation: bounce-in 0.6s cubic-bezier(0.3, 1.6, 0.5, 1), glow 1.6s ease-in-out 0.6s infinite;
 }
@@ -1400,7 +1498,7 @@ button:focus-visible {
   min-height: 56px;
   border: none;
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: var(--grad);
   color: #fff;
   font-size: 1.25rem;
   font-weight: 600;
@@ -1408,7 +1506,7 @@ button:focus-visible {
 }
 
 .big-btn.secondary {
-  background: #eef1ff;
+  background: var(--soft);
   color: var(--ink);
 }
 
@@ -1437,7 +1535,7 @@ button:focus-visible {
   max-width: calc(100vw - 32px);
   padding: 10px 20px;
   border-radius: 999px;
-  background: var(--ink);
+  background: var(--toast-bg);
   color: #fff;
   font-size: 1.1rem;
   font-weight: 500;
