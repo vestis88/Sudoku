@@ -3,7 +3,9 @@
   'use strict';
 
   const S = window.Sudoku;
-  const SAVE_KEY = 'sudoku-fun-save-v1';
+  const SAVE_KEY = 'sudoku-fun-save-v1'; // single saved game from older versions
+  const GAMES_KEY = 'sudoku-fun-games-v1'; // all unfinished games, newest first
+  const MAX_GAMES = 30;
   const PREF_KEY = 'sudoku-fun-prefs-v1';
   const CHECK_MS = 3000;
   const LEVELS = {
@@ -127,11 +129,99 @@
     return game.elapsed + (Date.now() - clockStart);
   }
 
+  /* ---------------- Saved games ---------------- */
+
+  function savedGames() {
+    const list = store.get(GAMES_KEY);
+    return Array.isArray(list) ? list.filter((g) => g && g.id && !g.done && S.VARIANTS[g.mode]) : [];
+  }
+
+  // Puts the current game first in the list; finished games are removed.
+  function storeGame() {
+    const others = savedGames().filter((g) => g.id !== game.id);
+    if (!game.done) game.updatedAt = Date.now();
+    store.set(GAMES_KEY, (game.done ? others : [game].concat(others)).slice(0, MAX_GAMES));
+  }
+
+  function deleteSavedGame(id) {
+    store.set(GAMES_KEY, savedGames().filter((g) => g.id !== id));
+  }
+
+  // Moves the single save of older versions into the list.
+  function migrateOldSave() {
+    const old = store.get(SAVE_KEY);
+    if (!old) return;
+    if (!old.done && S.VARIANTS[old.mode] && !savedGames().length) {
+      old.id = old.id || 'g' + Date.now().toString(36);
+      old.updatedAt = old.updatedAt || Date.now();
+      store.set(GAMES_KEY, [old]);
+    }
+    try {
+      localStorage.removeItem(SAVE_KEY);
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function progress(g) {
+    let open = 0;
+    let filled = 0;
+    g.puzzle.forEach((v, i) => {
+      if (v) return;
+      open++;
+      if (g.values[i]) filled++;
+    });
+    return open ? Math.round((filled / open) * 100) : 100;
+  }
+
+  function whenLabel(ts) {
+    const d = new Date(ts);
+    const now = new Date();
+    const time = d.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+    const days = Math.round((new Date(now.toDateString()) - new Date(d.toDateString())) / 86400000);
+    if (days === 0) return `idag ${time}`;
+    if (days === 1) return `igår ${time}`;
+    return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
+  }
+
+  function gameSummary(g) {
+    const who = g.player ? `${playerLabel(g.player)} · ` : '';
+    return `${who}${MODES[g.mode]} · ${LEVELS[g.level].icon} ${LEVELS[g.level].label}`;
+  }
+
+  function resumeGame(id) {
+    const g = savedGames().find((x) => x.id === id);
+    if (!g) return;
+    $('#games-picker').hidden = true;
+    game = g;
+    startGame();
+  }
+
+  function openGamesList() {
+    const list = savedGames();
+    $('#games-list').innerHTML = list.length
+      ? list
+          .map((g) => {
+            const pct = progress(g);
+            return `<li class="saved-game" style="--pc:${g.player && PLAYERS[g.player] ? PLAYERS[g.player].color : 'var(--accent)'}">
+              <button class="saved-open" data-id="${g.id}">
+                <span class="saved-title">${gameSummary(g)}</span>
+                <span class="saved-meta">⏱ ${formatTime(g.elapsed || 0)} · ${pct}% klart · ${whenLabel(g.updatedAt || Date.now())}</span>
+                <span class="saved-bar"><span style="width:${pct}%"></span></span>
+              </button>
+              <button class="saved-delete" data-id="${g.id}" aria-label="Ta bort">🗑</button>
+            </li>`;
+          })
+          .join('')
+      : '<li class="saved-empty">Inga sparade spel just nu.</li>';
+    $('#games-picker').hidden = false;
+  }
+
   function saveGame() {
     if (!game) return;
     game.elapsed = elapsedMs();
     clockStart = Date.now();
-    store.set(SAVE_KEY, game);
+    storeGame();
   }
 
   let toastTimer = null;
@@ -486,13 +576,13 @@
     });
     renderPlayers();
     $('.levels').classList.toggle('locked', !prefs.player);
-    const saved = store.get(SAVE_KEY);
-    const canContinue = saved && !saved.done && S.VARIANTS[saved.mode];
-    $('#continue').hidden = !canContinue;
-    if (canContinue) {
-      const who = saved.player ? `${playerLabel(saved.player)} · ` : '';
-      $('#continue-label').textContent = `${who}${MODES[saved.mode]} · ${LEVELS[saved.level].icon} ${LEVELS[saved.level].label}`;
+    const games = savedGames();
+    $('#continue').hidden = !games.length;
+    if (games.length) {
+      $('#continue-label').textContent = `${gameSummary(games[0])} · ${progress(games[0])}%`;
     }
+    $('#btn-games').hidden = games.length < 2;
+    $('#games-count').textContent = games.length;
     renderLeaderboard();
   }
 
@@ -567,6 +657,7 @@
     $('#game').hidden = true;
     $('#win').hidden = true;
     $('#home').hidden = false;
+    $('#home').scrollTop = 0;
     renderHome();
     refreshLeaderboard();
   }
@@ -583,6 +674,7 @@
     }
     const g = S.generate(mode, level);
     game = {
+      id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       player,
       mode,
       level,
@@ -1103,7 +1195,7 @@
     renderClock();
     $('#toast').className = 'toast';
     const record = recordResult();
-    store.set(SAVE_KEY, game);
+    storeGame(); // a finished game leaves the saved games list
     clearChecks();
     selected = -1;
     renderHighlights();
@@ -1207,6 +1299,7 @@
   }
 
   function init() {
+    migrateOldSave();
     applyTheme();
     buildPlayers();
     document.querySelectorAll('[data-preview]').forEach((el) => buildPreview(el, S.VARIANTS[el.dataset.preview]));
@@ -1251,10 +1344,28 @@
       if (e.key === 'Escape') $('#theme-picker').hidden = true;
     });
     $('#continue').addEventListener('click', () => {
-      const saved = store.get(SAVE_KEY);
-      if (!saved) return;
-      game = saved;
-      startGame();
+      const latest = savedGames()[0];
+      if (latest) resumeGame(latest.id);
+    });
+    $('#btn-games').addEventListener('click', openGamesList);
+    $('#games-close').addEventListener('click', () => ($('#games-picker').hidden = true));
+    $('#games-picker').addEventListener('click', (e) => {
+      if (e.target.id === 'games-picker') $('#games-picker').hidden = true;
+      const open = e.target.closest('.saved-open');
+      if (open) resumeGame(open.dataset.id);
+      const del = e.target.closest('.saved-delete');
+      if (del) {
+        // First tap asks, second tap removes.
+        if (!del.classList.contains('confirm')) {
+          del.classList.add('confirm');
+          del.textContent = 'Ta bort?';
+          return;
+        }
+        deleteSavedGame(del.dataset.id);
+        renderHome();
+        if (savedGames().length) openGamesList();
+        else $('#games-picker').hidden = true;
+      }
     });
 
     $('#btn-home').addEventListener('click', showHome);

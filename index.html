@@ -44,6 +44,7 @@
         <small id="continue-label"></small>
       </span>
     </button>
+    <button id="btn-games" class="games-btn" hidden>📂 Sparade spel (<span id="games-count">0</span>)</button>
 
     <h2 class="step"><span class="step-num">1</span> Vem spelar?</h2>
     <div id="players" class="players" role="radiogroup" aria-label="Spelare"></div>
@@ -131,6 +132,15 @@
         <button id="btn-again" class="big-btn">🎲 Nytt pussel</button>
         <button id="btn-win-home" class="big-btn secondary">🏠 Byt nivå</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Saved games -->
+  <div id="games-picker" class="overlay" hidden>
+    <div class="picker-card" role="dialog" aria-modal="true" aria-labelledby="games-title">
+      <h2 id="games-title">Sparade spel</h2>
+      <ul id="games-list" class="games-list"></ul>
+      <button id="games-close" class="big-btn secondary">Stäng</button>
     </div>
   </div>
 

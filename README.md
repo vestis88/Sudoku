@@ -32,8 +32,10 @@ no build step, no dependencies, works offline and collects no data.
 * **Timer and records**: a clock runs during the game next to the player's
   best time (🏅). Beating your own best (or everyone's) triggers a big
   "NYTT REKORD!" celebration with confetti cannons and a fanfare.
-* Undo, erase, hints, confetti when you win, sounds (can be muted), and
-  progress is saved automatically.
+* **Pause and resume**: every unfinished game is saved on the device.
+  *Fortsätt* jumps back into the latest one, and *📂 Sparade spel* lists all
+  of them (who, board, time, progress) to continue or remove.
+* Undo, erase, hints, confetti when you win and sounds (can be muted).
 * **Themes** (🎨 on the start screen): 🌈 Färgglad, 🚀 Rymd and 🍬 Godis for
   kids, 🖋️ Elegant for grown-ups and ⬜ Enkel, a plain black-and-white look
   with no animations. The choice is remembered on each device.
