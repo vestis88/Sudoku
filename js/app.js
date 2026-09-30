@@ -324,37 +324,101 @@
     return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
   }
 
+  function avatarOf(name) {
+    return results.avatar(name);
+  }
+
   function playerLabel(name) {
-    const p = PLAYERS[name];
-    return p ? `${p.icon} ${p.name}` : '';
+    return PLAYERS[name] ? `${avatarOf(name)} ${name}` : '';
   }
 
   function buildPlayers() {
     const wrap = $('#players');
     LB.PLAYERS.forEach((p) => {
+      const card = document.createElement('div');
+      card.className = 'player-card';
+      card.style.setProperty('--pc', p.color);
+
       const btn = document.createElement('button');
       btn.className = 'player-btn';
       btn.setAttribute('role', 'radio');
       btn.dataset.player = p.name;
-      btn.style.setProperty('--pc', p.color);
-      btn.innerHTML = `<span class="player-icon">${p.icon}</span><span class="player-name">${p.name}</span>`;
+      btn.innerHTML = `<span class="player-icon"></span><span class="player-name">${p.name}</span>`;
       btn.addEventListener('click', () => {
         prefs.player = p.name;
         savePrefs();
         renderHome();
         burst(btn, 6);
       });
-      wrap.appendChild(btn);
+
+      const edit = document.createElement('button');
+      edit.className = 'player-edit';
+      edit.dataset.player = p.name;
+      edit.textContent = '✏️';
+      edit.setAttribute('aria-label', `Byt figur för ${p.name}`);
+      edit.addEventListener('click', () => openPicker(p.name));
+
+      card.append(btn, edit);
+      wrap.appendChild(card);
     });
+    renderPlayers();
+  }
+
+  function renderPlayers() {
+    document.querySelectorAll('.player-btn').forEach((btn) => {
+      btn.setAttribute('aria-checked', String(btn.dataset.player === prefs.player));
+      btn.querySelector('.player-icon').textContent = avatarOf(btn.dataset.player);
+    });
+  }
+
+  /* ---------------- Avatar picker ---------------- */
+
+  let pickerFor = null;
+
+  function openPicker(name) {
+    pickerFor = name;
+    const current = avatarOf(name);
+    $('#picker-title').textContent = `Välj din figur, ${name}!`;
+    $('.picker-card').style.setProperty('--pc', PLAYERS[name].color);
+    const grid = $('#avatar-grid');
+    grid.innerHTML = '';
+    LB.AVATARS.forEach((icon, k) => {
+      const b = document.createElement('button');
+      b.className = 'avatar-option';
+      b.textContent = icon;
+      b.setAttribute('role', 'radio');
+      b.setAttribute('aria-checked', String(icon === current));
+      b.style.animationDelay = `${k * 15}ms`;
+      b.addEventListener('click', () => chooseAvatar(icon));
+      grid.appendChild(b);
+    });
+    $('#avatar-picker').hidden = false;
+    grid.querySelector('[aria-checked="true"]').focus();
+  }
+
+  function closePicker() {
+    $('#avatar-picker').hidden = true;
+    pickerFor = null;
+  }
+
+  function chooseAvatar(icon) {
+    const name = pickerFor;
+    if (!name || !results.setAvatar(name, icon)) return;
+    closePicker();
+    renderPlayers();
+    renderLeaderboard();
+    Sound.good();
+    const btn = document.querySelector(`.player-btn[data-player="${name}"]`);
+    replayAnimation(btn.querySelector('.player-icon'), 'pop');
+    burst(btn, 8);
+    toast(`Snyggt, ${name}! ${icon}`);
   }
 
   function renderHome() {
     document.querySelectorAll('.mode-card').forEach((card) => {
       card.setAttribute('aria-checked', String(card.dataset.mode === prefs.mode));
     });
-    document.querySelectorAll('.player-btn').forEach((btn) => {
-      btn.setAttribute('aria-checked', String(btn.dataset.player === prefs.player));
-    });
+    renderPlayers();
     $('.levels').classList.toggle('locked', !prefs.player);
     const saved = store.get(SAVE_KEY);
     const canContinue = saved && !saved.done && S.VARIANTS[saved.mode];
@@ -399,7 +463,7 @@
         : '<p class="lb-empty">Ingen har klarat den än – bli först! 🌟</p>';
       const played = LB.PLAYERS.map(
         (p) =>
-          `<span class="lb-chip" style="--pc:${p.color}" title="${p.name}: ${s.byPlayer[p.name]} spelade">${p.icon} ${s.byPlayer[p.name]}</span>`
+          `<span class="lb-chip" style="--pc:${p.color}" title="${p.name}: ${s.byPlayer[p.name]} spelade">${avatarOf(p.name)} ${s.byPlayer[p.name]}</span>`
       ).join('');
       return `<div class="lb-card">
         <div class="lb-card-head"><span class="lb-level">${lvl.icon} ${lvl.label}</span><span class="lb-count">${s.count} ${s.count === 1 ? 'spelad' : 'spelade'}</span></div>
@@ -411,7 +475,10 @@
 
   function refreshLeaderboard() {
     renderLeaderboard();
-    results.sync().then(renderLeaderboard);
+    results.sync().then(() => {
+      renderPlayers();
+      renderLeaderboard();
+    });
   }
 
   function showHome() {
@@ -1075,6 +1142,13 @@
       })
     );
     window.addEventListener('online', refreshLeaderboard);
+    $('#picker-close').addEventListener('click', closePicker);
+    $('#avatar-picker').addEventListener('click', (e) => {
+      if (e.target.id === 'avatar-picker') closePicker(); // tap outside the card
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !$('#avatar-picker').hidden) closePicker();
+    });
     $('#continue').addEventListener('click', () => {
       const saved = store.get(SAVE_KEY);
       if (!saved) return;

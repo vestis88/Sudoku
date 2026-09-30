@@ -17,10 +17,18 @@
     { name: 'Bim', icon: '🦄', color: '#e0409a' },
     { name: 'Frans', icon: '🐙', color: '#f7801a' },
   ];
+  // Avatars players can pick. Must match the list in firestore.rules.
+  const AVATARS = [
+    '🌈', '🦄', '🦖', '🚀', '🐙', '🐱', '🐶', '🦊',
+    '🐼', '🐸', '🦁', '🐯', '🐵', '🐧', '🦋', '🐬',
+    '🦈', '🐢', '🐲', '🤖', '👾', '👑', '🌟', '🍕',
+    '🍦', '🍓', '🌸', '🌻', '🎸', '🏀',
+  ];
   const MODES = ['mini', 'classic'];
   const LEVELS = ['easy', 'medium', 'hard'];
   const CACHE_KEY = 'sudoku-fun-results-v1';
   const OUTBOX_KEY = 'sudoku-fun-outbox-v1';
+  const AVATAR_KEY = 'sudoku-fun-avatars-v1';
   const COLLECTION = 'results';
 
   function readJSON(key, fallback) {
@@ -124,9 +132,8 @@
     const cfg = config || {};
     const enabled = !!(cfg.apiKey && cfg.projectId);
     const doFetch = fetchImpl || (root.fetch && root.fetch.bind(root));
-    const base = enabled
-      ? `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.projectId)}/databases/(default)/documents/${COLLECTION}`
-      : '';
+    const docs = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.projectId)}/databases/(default)/documents`;
+    const base = enabled ? `${docs}/${COLLECTION}` : '';
     let status = enabled ? 'idle' : 'local';
 
     function cache() {
@@ -175,10 +182,73 @@
       return all;
     }
 
+    /* ---------- Avatars: { name: { icon, pending } } ---------- */
+
+    function avatarCache() {
+      return readJSON(AVATAR_KEY, {});
+    }
+
+    function avatar(name) {
+      const a = avatarCache()[name];
+      if (a && AVATARS.includes(a.icon)) return a.icon;
+      const p = PLAYERS.find((x) => x.name === name);
+      return p ? p.icon : '';
+    }
+
+    function setAvatar(name, icon) {
+      if (!PLAYERS.some((p) => p.name === name) || !AVATARS.includes(icon)) return false;
+      const all = avatarCache();
+      all[name] = { icon, pending: enabled };
+      writeJSON(AVATAR_KEY, all);
+      if (enabled) pushAvatars().catch(() => {});
+      return true;
+    }
+
+    // Changes that could not be uploaded stay pending and are retried on the next sync.
+    async function pushAvatars() {
+      for (const [name, a] of Object.entries(avatarCache())) {
+        if (!a.pending) continue;
+        const url = `${docs}/profiles/${encodeURIComponent(name)}?key=${encodeURIComponent(cfg.apiKey)}`;
+        const res = await doFetch(url, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: { icon: { stringValue: a.icon } } }),
+        });
+        if (!res.ok) throw new Error('Avatar upload failed: ' + res.status);
+        const now = avatarCache();
+        if (now[name] && now[name].icon === a.icon) {
+          now[name].pending = false;
+          writeJSON(AVATAR_KEY, now);
+        }
+      }
+    }
+
+    async function syncAvatars() {
+      await pushAvatars();
+      const res = await doFetch(`${docs}/profiles?key=${encodeURIComponent(cfg.apiKey)}`);
+      if (!res.ok) throw new Error('Avatar download failed: ' + res.status);
+      const body = await res.json();
+      const all = avatarCache();
+      for (const d of body.documents || []) {
+        const name = decodeURIComponent(d.name.split('/').pop());
+        const icon = d.fields && d.fields.icon && d.fields.icon.stringValue;
+        const local = all[name];
+        if (!PLAYERS.some((p) => p.name === name) || !AVATARS.includes(icon)) continue;
+        if (local && local.pending) continue; // a newer local choice wins
+        all[name] = { icon, pending: false };
+      }
+      writeJSON(AVATAR_KEY, all);
+    }
+
     /* Uploads waiting results, then downloads everything. Resolves to all results. */
     async function sync() {
       if (!enabled) return cache();
       status = 'syncing';
+      try {
+        await syncAvatars();
+      } catch (e) {
+        /* avatars are optional; results decide the sync status */
+      }
       try {
         await flush();
         const remote = await download();
@@ -216,10 +286,12 @@
       status: () => status,
       add,
       sync,
+      avatar,
+      setAvatar,
     };
   }
 
-  const api = { PLAYERS, MODES, LEVELS, stats, create, toDoc, fromDoc };
+  const api = { PLAYERS, AVATARS, MODES, LEVELS, stats, create, toDoc, fromDoc };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Leaderboard = api;

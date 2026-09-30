@@ -14,12 +14,6 @@
 </head>
 <body>
   <div class="sky" aria-hidden="true">
-    <span class="float f1">⭐</span>
-    <span class="float f2">🎈</span>
-    <span class="float f3">✨</span>
-    <span class="float f4">🌈</span>
-    <span class="float f5">🍭</span>
-    <span class="float f6">☁️</span>
     <span class="blob b1"></span>
     <span class="blob b2"></span>
     <span class="blob b3"></span>
@@ -125,6 +119,15 @@
         <button id="btn-again" class="big-btn">🎲 Nytt pussel</button>
         <button id="btn-win-home" class="big-btn secondary">🏠 Byt nivå</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Avatar picker -->
+  <div id="avatar-picker" class="overlay" hidden>
+    <div class="picker-card" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+      <h2 id="picker-title">Välj din figur</h2>
+      <div id="avatar-grid" class="avatar-grid" role="radiogroup" aria-label="Figurer"></div>
+      <button id="picker-close" class="big-btn secondary">Stäng</button>
     </div>
   </div>
 

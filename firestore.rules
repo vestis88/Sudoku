@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Sudoku Kul leaderboard.
+// Sudoku Kul leaderboard and player avatars.
 // Anyone can read results and add a new one, but only with the expected
 // fields and values. Results can never be changed or deleted from the app.
 service cloud.firestore {
@@ -18,6 +18,15 @@ service cloud.firestore {
         && request.resource.data.hints >= 0
         && request.resource.data.date is timestamp;
       allow update, delete: if false;
+    }
+
+    // A player's chosen avatar (one document per player).
+    match /profiles/{name} {
+      allow read: if true;
+      allow create, update: if name in ['Wille', 'Johan', 'Bim', 'Frans']
+        && request.resource.data.keys().hasOnly(['icon'])
+        && request.resource.data.icon in ['🌈', '🦄', '🦖', '🚀', '🐙', '🐱', '🐶', '🦊', '🐼', '🐸', '🦁', '🐯', '🐵', '🐧', '🦋', '🐬', '🦈', '🐢', '🐲', '🤖', '👾', '👑', '🌟', '🍕', '🍦', '🍓', '🌸', '🌻', '🎸', '🏀'];
+      allow delete: if false;
     }
   }
 }
