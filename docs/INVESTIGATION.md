@@ -264,8 +264,8 @@ ready, which makes starting a game instant.
   (none in the grown-up themes).
 * Tectonic results from before the switch to 9 × 9 are left out of the
   leaderboard.
-* Selecting a cell highlights its region and its 8 touching cells, the
-  cells that constrain it.
+* Selecting a cell highlights its own region with a see-through layer, so
+  the region colours stay visible. Given numbers keep their region's colour.
 * The number buttons count how many of each number are still missing (the
   number of regions with at least that many cells, minus those placed).
 * Notes, check, hints, undo, timer, records, saved games and the leaderboard

@@ -1137,6 +1137,21 @@ button:focus-visible {
   transform: none;
 }
 
+/* Givens keep their region's colour, just a little darker */
+.board.tectonic .cell.given {
+  background: color-mix(in srgb, var(--ink) 7%, var(--cell));
+}
+
+/* The selected cell's region: a see-through layer, so the region colour stays */
+.board.tectonic .cell.related,
+.board.tectonic .cell.related.given {
+  background: linear-gradient(var(--region-hl), var(--region-hl)), var(--cell);
+}
+
+.board.tectonic {
+  --region-hl: color-mix(in srgb, var(--sel) 45%, transparent);
+}
+
 .preview.tec {
   position: relative;
   gap: 0;

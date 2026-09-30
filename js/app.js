@@ -223,6 +223,11 @@
     }
     out.game = game;
     out.peerSets = out.peers.map((p) => new Set(p));
+    // Cells highlighted around a selection: row, column and box for sudoku;
+    // only the cell's own region for Tectonic.
+    out.highlightSets = out.tectonic
+      ? out.tectonic.unitOf.map((u, i) => new Set(out.tectonic.units[u].filter((x) => x !== i)))
+      : out.peerSets;
     geoCache = out;
     return out;
   }
@@ -1074,7 +1079,7 @@
   }
 
   function renderHighlights() {
-    const peers = selected >= 0 ? geo().peerSets[selected] : null;
+    const peers = selected >= 0 ? geo().highlightSets[selected] : null;
     const selVal = selected >= 0 ? game.values[selected] : 0;
     for (let i = 0; i < cellEls.length; i++) {
       const el = cellEls[i];
