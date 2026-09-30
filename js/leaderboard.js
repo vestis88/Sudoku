@@ -96,8 +96,8 @@
   /* ---------- Statistics ---------- */
 
   /*
-   * For every mode and level: number of games (total and per player) and the
-   * fastest results, best first.
+   * For every mode and level: number of games (total and per player, all
+   * games) and the fastest results without hints, best first.
    */
   function stats(results, top = 3) {
     const out = {};
@@ -114,12 +114,12 @@
       const bucket = out[r.mode][r.level];
       bucket.count++;
       bucket.byPlayer[r.player]++;
-      bucket.best.push(r);
+      if (!r.hints) bucket.best.push(r);
     }
     for (const mode of MODES) {
       for (const level of LEVELS) {
         const b = out[mode][level];
-        b.best.sort((a, c) => a.timeMs - c.timeMs || a.hints - c.hints || a.date.localeCompare(c.date));
+        b.best.sort((a, c) => a.timeMs - c.timeMs || a.date.localeCompare(c.date));
         b.best = b.best.slice(0, top);
       }
     }

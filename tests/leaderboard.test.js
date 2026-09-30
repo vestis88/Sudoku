@@ -17,7 +17,7 @@ function result(player, mode, level, timeMs, hints = 0, date = '2026-01-01T10:00
   return { id: `${player}-${timeMs}`, player, mode, level, timeMs, hints, date };
 }
 
-test('stats counts games per player and lists the fastest first', () => {
+test('stats counts all games but lists only the fastest games without hints', () => {
   const s = Leaderboard.stats([
     result('Bim', 'mini', 'easy', 90000),
     result('Wille', 'mini', 'easy', 60000, 2),
@@ -30,9 +30,10 @@ test('stats counts games per player and lists the fastest first', () => {
   const easy = s.mini.easy;
   assert.equal(easy.count, 5);
   assert.deepEqual(easy.byPlayer, { Wille: 1, Johan: 1, Bim: 2, Frans: 1 });
+  // Wille's 60000 used hints: counted as played, but not on the leaderboard.
   assert.deepEqual(
     easy.best.map((r) => r.timeMs),
-    [60000, 75000, 90000]
+    [75000, 90000, 120000]
   );
   assert.equal(s.classic.hard.count, 1);
   assert.equal(s.mini.hard.count, 0);

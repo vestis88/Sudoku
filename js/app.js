@@ -456,11 +456,11 @@
               (r, k) => `<li class="${r.player === prefs.player ? 'me' : ''}" style="--pc:${PLAYERS[r.player].color}">
                 <span class="lb-medal">${medals[k]}</span>
                 <span class="lb-player">${playerLabel(r.player)}</span>
-                <span class="lb-time">${formatTime(r.timeMs)}${r.hints ? `<small title="Ledtrådar">💡${Number(r.hints)}</small>` : ''}</span>
+                <span class="lb-time">${formatTime(r.timeMs)}</span>
               </li>`
             )
             .join('')}</ol>`
-        : '<p class="lb-empty">Ingen har klarat den än – bli först! 🌟</p>';
+        : '<p class="lb-empty">Ingen tid utan ledtrådar än – bli först! 🌟</p>';
       const played = LB.PLAYERS.map(
         (p) =>
           `<span class="lb-chip" style="--pc:${p.color}" title="${p.name}: ${s.byPlayer[p.name]} spelade">${avatarOf(p.name)} ${s.byPlayer[p.name]}</span>`
@@ -940,10 +940,11 @@
     burst(cellEls[target], 6);
   }
 
+  // Fastest time without hints (only those count for records and the leaderboard).
   function bestTime(mode, level, player) {
     const times = results
       .results()
-      .filter((r) => r.mode === mode && r.level === level && (!player || r.player === player))
+      .filter((r) => r.mode === mode && r.level === level && !r.hints && (!player || r.player === player))
       .map((r) => r.timeMs);
     return times.length ? Math.min(...times) : 0;
   }
@@ -985,6 +986,9 @@
     if (!game.player || game.recorded) return none;
     const best = bestTime(game.mode, game.level);
     const mine = bestTime(game.mode, game.level, game.player);
+    const playedBefore = results
+      .results()
+      .some((r) => r.mode === game.mode && r.level === game.level && r.player === game.player);
     const saved = results.add({
       player: game.player,
       mode: game.mode,
@@ -994,9 +998,11 @@
     });
     game.recorded = true;
     if (!saved) return none;
+    if (game.hints) return { kind: 'hinted', prevMine: 0 };
     const beatsAll = best > 0 && game.elapsed < best;
     if (beatsAll) return { kind: 'all', prevMine: mine };
-    if (!mine) return { kind: 'first', prevMine: 0 };
+    if (!playedBefore) return { kind: 'first', prevMine: 0 };
+    if (!mine) return { kind: 'first-clean', prevMine: 0 };
     if (game.elapsed < mine) return { kind: 'personal', prevMine: mine };
     return none;
   }
@@ -1052,7 +1058,11 @@
         ? `🏆 Snabbast av alla på ${where}!`
         : record.kind === 'first'
           ? `🎉 Första gången du klarar ${where}!`
-          : '';
+          : record.kind === 'first-clean'
+            ? `🎉 Din första tid utan ledtrådar – nu är du med på topplistan!`
+            : record.kind === 'hinted'
+              ? '💡 Klara den utan ledtrådar för att komma med på topplistan!'
+              : '';
       $('#win-stars').innerHTML = [1, 2, 3]
         .map((n) => `<span class="${n <= stars ? '' : 'off'}" style="animation-delay:${0.3 + n * 0.2}s">⭐</span>`)
         .join('');

@@ -24,7 +24,9 @@ no build step, no dependencies, works offline and collects no data.
 * **Players and leaderboard**: pick who is playing (Wille, Johan, Bim or
   Frans) before starting. Tap ✏️ on a player to choose an avatar (🌈 and 31
   more), saved on each device. Solve times are saved and the start screen shows the
-  three best times and the number of games played per board size and level.
+  three best times without hints and the number of games played per board size
+  and level. Games solved with hints are counted as played but never appear
+  as best times or records.
   Results sync between devices through Firebase; see
   [docs/FIREBASE.md](docs/FIREBASE.md) for the one-time setup.
 * **Timer and records**: a clock runs during the game next to the player's
