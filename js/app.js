@@ -43,11 +43,11 @@
   let selected = -1;
   let cellEls = [];
   let padEls = {};
+  let noteEls = {};
   let doneDigits = new Set();
   let checkTimer = null;
   let clockStart = Date.now();
   let warnedFull = false;
-  let noteMode = false;
 
   /* ---------------- Sound ---------------- */
 
@@ -299,7 +299,6 @@
     warnedFull = false;
     clockStart = Date.now();
     if (!game.notes) game.notes = new Array(game.values.length).fill(0);
-    setNoteMode(false, true);
     $('#home').hidden = true;
     $('#win').hidden = true;
     $('#game').hidden = false;
@@ -358,7 +357,12 @@
     pad.innerHTML = '';
     pad.style.setProperty('--n', v.size);
     pad.style.setProperty('--pad-rows', Math.ceil(v.size / 3));
+    const notePad = $('#notes-pad');
+    notePad.innerHTML = '';
+    notePad.style.setProperty('--n', v.size);
+    notePad.style.setProperty('--pad-rows', Math.ceil(v.size / 3));
     padEls = {};
+    noteEls = {};
     for (let d = 1; d <= v.size; d++) {
       const btn = document.createElement('button');
       btn.className = 'pad-btn';
@@ -367,6 +371,15 @@
       btn.addEventListener('click', () => enter(d));
       padEls[d] = btn;
       pad.appendChild(btn);
+
+      const note = document.createElement('button');
+      note.className = 'note-btn';
+      note.style.setProperty('--dc', `var(--d${d})`);
+      note.textContent = d;
+      note.setAttribute('aria-label', `Anteckna ${d}`);
+      note.addEventListener('click', () => enterNote(d));
+      noteEls[d] = note;
+      notePad.appendChild(note);
     }
   }
 
@@ -455,6 +468,7 @@
       const done = left <= 0;
       btn.querySelector('.left').textContent = done ? '✓' : left;
       btn.classList.toggle('done', done);
+      noteEls[d].classList.toggle('done', done);
       btn.setAttribute('aria-label', done ? `${d}, alla placerade` : `${d}, ${left} kvar`);
       if (done && !doneDigits.has(d)) {
         doneDigits.add(d);
@@ -486,24 +500,30 @@
     renderHighlights();
   }
 
-  function enter(d) {
-    if (!game || game.done) return;
+  // True when the selected cell can be changed; otherwise explains why not.
+  function canEditSelected() {
+    if (!game || game.done) return false;
     if (selected < 0) {
       Sound.nope();
       replayAnimation($('#board'), 'wiggle');
       toast('Tryck på en ruta först 👆');
-      return;
+      return false;
     }
     if (game.puzzle[selected]) {
       Sound.nope();
       replayAnimation(cellEls[selected], 'wiggle');
       toast('Den siffran är låst 🔒');
-      return;
+      return false;
     }
-    if (noteMode) {
-      toggleNote(selected, d);
-      return;
-    }
+    return true;
+  }
+
+  function enterNote(d) {
+    if (canEditSelected()) toggleNote(selected, d);
+  }
+
+  function enter(d) {
+    if (!canEditSelected()) return;
     if (game.values[selected] === d) {
       setValue(selected, 0); // tapping the same number again removes it
       return;
@@ -532,7 +552,7 @@
     }
     if (doneDigits.has(d)) {
       Sound.nope();
-      replayAnimation(padEls[d], 'wiggle');
+      replayAnimation(noteEls[d], 'wiggle');
       toast(`Alla ${DIGIT_NAMES[d]} är redan använda!`);
       return;
     }
@@ -542,17 +562,6 @@
     Sound.note(d);
     renderHighlights();
     saveGame();
-  }
-
-  function setNoteMode(on, quiet) {
-    noteMode = on;
-    const btn = $('#btn-notes');
-    btn.classList.toggle('on', on);
-    btn.setAttribute('aria-pressed', String(on));
-    $('#pad').classList.toggle('notes-mode', on);
-    if (quiet) return;
-    replayAnimation(btn, 'pop');
-    toast(on ? 'Anteckna ✏️ – skriv små kandidater' : 'Svar 🖊️ – skriv in siffror');
   }
 
   function setValue(i, v, opts) {
@@ -742,7 +751,10 @@
       return;
     }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (/^[1-9]$/.test(key) && Number(key) <= v.size) {
+    const digitKey = /^(?:Digit|Numpad)([1-9])$/.exec(e.code || '');
+    if (e.shiftKey && digitKey && Number(digitKey[1]) <= v.size) {
+      enterNote(Number(digitKey[1]));
+    } else if (/^[1-9]$/.test(key) && Number(key) <= v.size) {
       enter(Number(key));
     } else if (key === 'Backspace' || key === 'Delete' || key === '0') {
       erase();
@@ -764,8 +776,6 @@
       check();
     } else if (key.toLowerCase() === 'l' || key.toLowerCase() === 'h') {
       hint();
-    } else if (key.toLowerCase() === 'n' || key.toLowerCase() === 'a') {
-      setNoteMode(!noteMode);
     } else if (key === 'Escape') {
       selected = -1;
       renderHighlights();
@@ -811,7 +821,6 @@
     $('#btn-undo').addEventListener('click', undo);
     $('#btn-erase').addEventListener('click', erase);
     $('#btn-hint').addEventListener('click', hint);
-    $('#btn-notes').addEventListener('click', () => setNoteMode(!noteMode));
     $('#btn-check').addEventListener('click', check);
     $('#btn-again').addEventListener('click', () => newGame(game.mode, game.level));
     $('#btn-win-home').addEventListener('click', showHome);

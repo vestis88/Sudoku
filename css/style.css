@@ -361,7 +361,7 @@ body.playing .float {
   display: flex;
   flex-direction: column;
   /* Space around the board used by header, number pad and actions */
-  --chrome: 250px;
+  --chrome: 300px;
   --board-size: min(calc(100vw - 12px), calc(100dvh - var(--chrome)), 640px);
 }
 
@@ -717,31 +717,51 @@ body.playing .float {
   gap: 8px;
 }
 
-/* Notes toggle and the number pad while taking notes */
-.tool.toggle.on {
-  background: linear-gradient(160deg, #a58bff, var(--accent));
-  box-shadow: 0 6px 0 #6446d6, 0 10px 20px rgba(143, 107, 255, 0.35);
+/* Second row of buttons for candidate notes: small, outlined and italic */
+.pads {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.tool.toggle.on .tool-label {
-  color: #fff;
-  font-weight: 600;
-}
-
-.pad.notes-mode .pad-btn:not(.done) {
+.note-btn {
+  --dc: var(--ink);
+  position: relative;
+  aspect-ratio: 1 / 0.8;
+  max-height: 52px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
   background: #fff;
   color: var(--dc);
+  font-size: clamp(0.95rem, calc(28vw / var(--n, 9)), 1.5rem);
   font-style: italic;
-  box-shadow: inset 0 0 0 3px var(--dc), 0 5px 0 color-mix(in srgb, var(--dc) 55%, white);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 2px var(--dc), 0 3px 0 color-mix(in srgb, var(--dc) 45%, white);
+  transition: transform 0.1s, opacity 0.2s;
 }
 
-.pad.notes-mode .pad-btn:not(.done)::before {
+.note-btn::before {
   content: '✏️';
   position: absolute;
-  bottom: 3px;
-  left: 4px;
-  font-size: 0.55rem;
+  top: 1px;
+  left: 3px;
+  font-size: 0.5rem;
   font-style: normal;
+}
+
+.note-btn:active:not(.done) {
+  transform: translateY(2px);
+}
+
+.note-btn.done {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.note-btn.wiggle {
+  animation: shake 0.4s ease;
 }
 
 .tool {
@@ -803,7 +823,8 @@ body.playing .float {
 /* Landscape: board on the left, controls on the right */
 @media (min-aspect-ratio: 6/5) {
   .game {
-    --board-size: min(calc(100dvh - 92px), calc(100vw - 360px), 700px);
+    --controls: min(440px, 40vw);
+    --board-size: min(calc(100dvh - 92px), calc(100vw - var(--controls) - 60px), 700px);
   }
 
   .play-area {
@@ -812,20 +833,35 @@ body.playing .float {
   }
 
   .controls {
-    width: min(300px, 34vw);
+    width: var(--controls);
     gap: 16px;
   }
 
-  .pad {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+  /* Answer grid and notes grid side by side */
+  .pads {
+    flex-direction: row;
+    gap: 14px;
   }
 
-  .pad-btn {
+  .pad {
+    flex: 1;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .pad-btn,
+  .note-btn {
     aspect-ratio: auto;
     height: min(80px, calc((100dvh - 250px) / var(--pad-rows, 3)));
     max-height: none;
+  }
+
+  .pad-btn {
     font-size: clamp(1.4rem, 5dvh, 2.3rem);
+  }
+
+  .note-btn {
+    font-size: clamp(1rem, 3.6dvh, 1.6rem);
   }
 
   .actions {
@@ -844,7 +880,7 @@ body.playing .float {
   }
 
   .game {
-    --chrome: 230px;
+    --chrome: 275px;
   }
 }
 
