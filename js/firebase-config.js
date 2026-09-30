@@ -6,6 +6,6 @@
  * Leave them empty to keep the leaderboard on this device only.
  */
 window.SUDOKU_FIREBASE = {
-  apiKey: '',
-  projectId: '',
+  apiKey: 'AIzaSyDRvliJAvbtwj_B8d6R6Xic8x8v9TfY1eU',
+  projectId: 'jn-sudoku',
 };
