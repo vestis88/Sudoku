@@ -10,7 +10,7 @@ no build step, no dependencies, works offline and collects no data.
   * **Classic 9 × 9**: numbers 1–9 in 3 × 3 boxes.
 * **Tectonic** (also called Suguru): irregular blocks of 1–5 cells, each
   holding 1 up to its size, and equal numbers may never touch, not even
-  diagonally. Lätt 5×5, Mellan 6×6, Svår 7×7.
+  diagonally. Always 9×9; the levels differ in the techniques needed.
 * **Three levels**: Easy 🐣, Medium 🦊 and Hard 🦁. Easy and Medium puzzles can
   always be solved with simple logic, without guessing. Every puzzle has
   exactly one solution.

@@ -144,3 +144,14 @@ test('avatars default per player and can be changed on this device', () => {
   storage['sudoku-fun-avatars-v1'] = JSON.stringify({ Frans: { icon: '🍭', pending: true } });
   assert.equal(lb.avatar('Frans'), '🍭');
 });
+
+test('Tectonic results from the old small boards are left out', () => {
+  const s = Leaderboard.stats([
+    result('Bim', 'tectonic', 'easy', 30000, 0, '2026-09-30T12:00:00.000Z'),
+    result('Johan', 'tectonic', 'easy', 240000, 0, '2026-10-01T12:00:00.000Z'),
+    result('Wille', 'mini', 'easy', 90000, 0, '2026-09-01T12:00:00.000Z'),
+  ]);
+  assert.equal(s.tectonic.easy.count, 1);
+  assert.equal(s.tectonic.easy.best[0].player, 'Johan');
+  assert.equal(s.mini.easy.count, 1, 'other modes keep older results');
+});

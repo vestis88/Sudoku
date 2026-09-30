@@ -17,13 +17,16 @@
 
   const MAX_REGION = 5;
 
-  // Board size, share of cells shown as clues, and which techniques a
-  // player may need: 1 = singles only, 2 = also cross-region eliminations
-  // and pairs, 0 = anything (the puzzle is only required to be unique).
+  /*
+   * All levels use a 9 x 9 board; they differ in the techniques needed
+   * (see runLogic): `logic` is the highest tier allowed, `harder` means the
+   * puzzle must NOT be solvable with that lower tier, and `clues` keeps at
+   * least that share of the cells filled in (0 = remove as many as possible).
+   */
   const LEVELS = {
-    easy: { width: 5, height: 5, clues: 0.44, logic: 1 },
-    medium: { width: 6, height: 6, clues: 0.3, logic: 2 },
-    hard: { width: 7, height: 7, clues: 0, logic: 0 },
+    easy: { width: 9, height: 9, logic: 1, harder: 0, clues: 0.4 },
+    medium: { width: 9, height: 9, logic: 2, harder: 1, clues: 0 },
+    hard: { width: 9, height: 9, logic: 3, harder: 2, clues: 0 },
   };
 
   const WEIGHTS = [
@@ -139,13 +142,34 @@
    * order where no number touches an equal, already placed number.
    * Returns { regions, solution } or null when it paints itself into a corner.
    */
+  const adjacencyCache = {};
+  function adjacency(width, height) {
+    const key = width + 'x' + height;
+    if (!adjacencyCache[key]) {
+      const cells = width * height;
+      adjacencyCache[key] = {
+        orth: Array.from({ length: cells }, (_, i) => orthogonal(i, width, height)),
+        touch: Array.from({ length: cells }, (_, i) => touching(i, width, height)),
+      };
+    }
+    return adjacencyCache[key];
+  }
+
   function buildBoard(width, height, rand) {
     const cells = width * height;
+    const { orth, touch } = adjacency(width, height);
     const regions = new Array(cells).fill(-1);
     const values = new Array(cells).fill(0);
     const free = (i) => regions[i] === -1;
-    const freeNeighbours = (i) => orthogonal(i, width, height).filter(free).length;
-    const fits = (i, v) => touching(i, width, height).every((n) => values[n] !== v);
+    const freeNeighbours = (i) => {
+      let n = 0;
+      for (const x of orth[i]) if (regions[x] === -1) n++;
+      return n;
+    };
+    const fits = (i, v) => {
+      for (const n of touch[i]) if (values[n] === v) return false;
+      return true;
+    };
 
     // A random order of 1..k over the region's cells that respects the
     // numbers already placed around it.
@@ -161,7 +185,7 @@
       // orthogonally connected empty area), so each empty cell's smallest
       // still-allowed number must fit in that patch.
       function stillOpen() {
-        const patch = new Array(cells).fill(0);
+        const patch = new Int8Array(cells);
         for (let i = 0; i < cells; i++) {
           if (!free(i) || patch[i]) continue;
           const stack = [i];
@@ -170,7 +194,7 @@
           while (stack.length) {
             const c = stack.pop();
             members.push(c);
-            for (const n of orthogonal(c, width, height)) {
+            for (const n of orth[c]) {
               if (free(n) && !patch[n]) {
                 patch[n] = -1;
                 stack.push(n);
@@ -182,7 +206,7 @@
         for (let n = 0; n < cells; n++) {
           if (!free(n)) continue;
           let blocked = 0;
-          for (const t of touching(n, width, height)) if (values[t]) blocked |= 1 << values[t];
+          for (const t of touch[n]) if (values[t]) blocked |= 1 << values[t];
           let smallest = 0;
           for (let d = 1; d <= MAX_REGION && !smallest; d++) if (!(blocked & (1 << d))) smallest = d;
           if (!smallest || smallest > patch[n]) return false;
@@ -211,11 +235,14 @@
       regions[start] = id;
       while (region.length < target) {
         const frontier = [];
-        for (const c of region) for (const n of orthogonal(c, width, height)) if (free(n) && !frontier.includes(n)) frontier.push(n);
+        for (const c of region) for (const n of orth[c]) if (free(n) && !frontier.includes(n)) frontier.push(n);
         if (!frontier.length) break;
         shuffle(frontier, rand);
         // Mostly take boxed-in cells first, sometimes any, for varied shapes.
-        if (rand() < 0.7) frontier.sort((a, b) => freeNeighbours(a) - freeNeighbours(b));
+        if (rand() < 0.7) {
+          const f = new Map(frontier.map((x) => [x, freeNeighbours(x)]));
+          frontier.sort((a, b) => f.get(a) - f.get(b));
+        }
         regions[frontier[0]] = id;
         region.push(frontier[0]);
       }
@@ -231,7 +258,7 @@
 
     // Depth-first: place one region at a time and undo it when the rest of
     // the board cannot be completed. `budget` caps the total effort.
-    const budget = { steps: 4000 };
+    const budget = { steps: 3000 };
     function step(id) {
       if (budget.steps-- <= 0) return false;
       let start = -1;
@@ -305,7 +332,7 @@
   function countSolutions(puzzle, geo, limit = 2) {
     const grid = puzzle.slice();
     let count = 0;
-    const budget = { nodes: 200000 };
+    const budget = { nodes: 5000000 };
     search(grid, geo, null, () => ++count >= limit, budget);
     return budget.nodes <= 0 ? limit : count; // treat an exhausted search as "not unique"
   }
@@ -320,78 +347,75 @@
   /* ---------- Human-style solver used for grading ---------- */
 
   /*
-   * Solves with the techniques players use, in order of difficulty.
-   * level 1: naked singles (one candidate left) and hidden singles (a number
-   *          fits in only one cell of its region).
-   * level 2: also eliminations across regions (a cell touching every
-   *          possible spot of a number in another region cannot hold it)
-   *          and naked pairs inside a region.
-   * Returns true when the grid gets completely filled.
+   * Solves with the techniques players use, in tiers:
+   *  1  naked single (one candidate left) and hidden single (a number fits
+   *     in only one cell of its region). Candidates already exclude numbers
+   *     used in the region and by the 8 touching cells.
+   *  2  forbidden neighbour (a cell touching every possible spot of a number
+   *     in another region cannot hold it), naked pairs and hidden pairs.
+   *  3  naked triples, and "what if" on cells with two candidates: if trying
+   *     one of them leads to a contradiction with tier 2, it is the other.
+   * Mutates grid and banned; returns 'solved', 'stuck' or 'contradiction'.
    */
-  function solveLogic(puzzle, geo, level) {
-    const grid = puzzle.slice();
-    const banned = new Array(geo.cells).fill(0);
-    let empty = grid.filter((v) => !v).length;
-    const cand = () => grid.map((v, i) => (v ? 0 : candidates(grid, i, geo) & ~banned[i]));
-
-    while (empty > 0) {
-      const c = cand();
-      let progress = false;
-
-      // Naked singles
+  function runLogic(grid, banned, geo, level) {
+    const full = (i) => (1 << (geo.sizeOf[i] + 1)) - 2;
+    for (;;) {
+      let empty = 0;
+      const c = new Array(geo.cells).fill(0);
       for (let i = 0; i < geo.cells; i++) {
         if (grid[i]) continue;
-        if (!c[i]) return false;
-        if (bitCount(c[i]) === 1) {
-          grid[i] = lowestDigit(c[i]);
-          empty--;
-          progress = true;
-        }
+        empty++;
+        c[i] = candidates(grid, i, geo) & ~banned[i] & full(i);
+        if (!c[i]) return 'contradiction';
       }
+      if (!empty) return 'solved';
+      const place = (i, d) => {
+        grid[i] = d;
+        return true;
+      };
+      const ban = (i, mask) => {
+        if (grid[i] || !(c[i] & mask & ~banned[i])) return false;
+        banned[i] |= mask;
+        return true;
+      };
+
+      // Tier 1: naked singles. One at a time, because the candidates must be
+      // recomputed after each placement.
+      let progress = false;
+      for (let i = 0; i < geo.cells && !progress; i++) if (!grid[i] && bitCount(c[i]) === 1) progress = place(i, lowestDigit(c[i]));
       if (progress) continue;
 
-      // Hidden singles in a region
+      // Tier 1: hidden singles (and a region that has lost a number is broken)
       for (const unit of geo.units) {
-        for (let d = 1; d <= unit.length && !progress; d++) {
+        for (let d = 1; d <= unit.length; d++) {
           if (unit.some((i) => grid[i] === d)) continue;
           const spots = unit.filter((i) => !grid[i] && c[i] & (1 << d));
-          if (spots.length === 0) return false;
+          if (!spots.length) return 'contradiction';
           if (spots.length === 1) {
-            grid[spots[0]] = d;
-            empty--;
+            place(spots[0], d);
             progress = true;
+            break;
           }
         }
         if (progress) break;
       }
-      if (progress || level < 2) {
-        if (progress) continue;
-        return false;
-      }
+      if (progress) continue;
+      if (level < 2) return 'stuck';
 
-      // A cell that touches every possible spot of number d in a region
-      // (outside that cell's own region) cannot be d.
-      for (let u = 0; u < geo.units.length; u++) {
-        const unit = geo.units[u];
+      // Tier 2: forbidden neighbour
+      geo.units.forEach((unit, u) => {
         for (let d = 1; d <= unit.length; d++) {
           if (unit.some((i) => grid[i] === d)) continue;
           const spots = unit.filter((i) => !grid[i] && c[i] & (1 << d));
           if (!spots.length) continue;
-          const common = geo.neighbors[spots[0]].filter(
-            (x) => geo.unitOf[x] !== u && spots.every((s) => geo.neighbors[s].includes(x))
-          );
-          for (const x of common) {
-            if (!grid[x] && c[x] & (1 << d) && !(banned[x] & (1 << d))) {
-              banned[x] |= 1 << d;
-              progress = true;
-            }
+          for (const x of geo.neighbors[spots[0]]) {
+            if (geo.unitOf[x] !== u && spots.every((sp) => geo.neighbors[sp].includes(x))) progress = ban(x, 1 << d) || progress;
           }
         }
-      }
+      });
+      if (progress) continue;
 
-      // Naked pairs: two cells of a region with the same two candidates hold
-      // those numbers, so other cells of the region, and any cell touching
-      // both, cannot.
+      // Tier 2: naked pairs (also clears cells touching both)
       for (const unit of geo.units) {
         const open = unit.filter((i) => !grid[i]);
         for (let a = 0; a < open.length; a++) {
@@ -399,20 +423,67 @@
             const p = open[a];
             const q = open[b];
             if (c[p] !== c[q] || bitCount(c[p]) !== 2) continue;
-            const targets = new Set(open.filter((x) => x !== p && x !== q));
-            geo.neighbors[p].forEach((x) => geo.neighbors[q].includes(x) && x !== p && x !== q && targets.add(x));
-            for (const x of targets) {
-              if (!grid[x] && c[x] & c[p] & ~banned[x]) {
-                banned[x] |= c[p];
-                progress = true;
-              }
-            }
+            for (const x of open) if (x !== p && x !== q) progress = ban(x, c[p]) || progress;
+            for (const x of geo.neighbors[p]) if (x !== q && geo.neighbors[q].includes(x)) progress = ban(x, c[p]) || progress;
           }
         }
       }
-      if (!progress) return false;
+      if (progress) continue;
+
+      // Tier 2: hidden pairs (two numbers that fit only in the same two cells)
+      for (const unit of geo.units) {
+        const spotsOf = [];
+        for (let d = 1; d <= unit.length; d++) {
+          if (unit.some((i) => grid[i] === d)) continue;
+          spotsOf.push([d, unit.filter((i) => !grid[i] && c[i] & (1 << d))]);
+        }
+        for (let a = 0; a < spotsOf.length; a++) {
+          for (let b = a + 1; b < spotsOf.length; b++) {
+            const [da, sa] = spotsOf[a];
+            const [db, sb] = spotsOf[b];
+            if (sa.length !== 2 || sb.length !== 2 || sa[0] !== sb[0] || sa[1] !== sb[1]) continue;
+            const keep = (1 << da) | (1 << db);
+            for (const x of sa) progress = ban(x, c[x] & ~keep) || progress;
+          }
+        }
+      }
+      if (progress) continue;
+      if (level < 3) return 'stuck';
+
+      // Tier 3: naked triples in a region
+      for (const unit of geo.units) {
+        const open = unit.filter((i) => !grid[i] && bitCount(c[i]) <= 3);
+        for (let a = 0; a < open.length; a++)
+          for (let b = a + 1; b < open.length; b++)
+            for (let e = b + 1; e < open.length; e++) {
+              const mask = c[open[a]] | c[open[b]] | c[open[e]];
+              if (bitCount(mask) !== 3) continue;
+              const trio = [open[a], open[b], open[e]];
+              for (const x of unit) if (!trio.includes(x)) progress = ban(x, mask) || progress;
+            }
+      }
+      if (progress) continue;
+
+      // Tier 3: "what if" on two-candidate cells
+      for (let i = 0; i < geo.cells && !progress; i++) {
+        if (grid[i] || bitCount(c[i]) !== 2) continue;
+        for (let d = 1; d <= MAX_REGION; d++) {
+          if (!(c[i] & (1 << d))) continue;
+          const g2 = grid.slice();
+          g2[i] = d;
+          if (runLogic(g2, banned.slice(), geo, 2) === 'contradiction') {
+            progress = ban(i, 1 << d);
+            break;
+          }
+        }
+      }
+      if (!progress) return 'stuck';
     }
-    return true;
+  }
+
+  // True when the puzzle can be finished using techniques up to `level`.
+  function solveLogic(puzzle, geo, level) {
+    return runLogic(puzzle.slice(), new Array(geo.cells).fill(0), geo, level) === 'solved';
   }
 
   /* ---------- Puzzle generation ---------- */
@@ -425,7 +496,7 @@
       if (clues <= target) break;
       const keep = puzzle[i];
       puzzle[i] = 0;
-      const ok = settings.logic ? solveLogic(puzzle, geo, settings.logic) : countSolutions(puzzle, geo, 2) === 1;
+      const ok = solveLogic(puzzle, geo, settings.logic);
       if (ok) clues--;
       else puzzle[i] = keep;
     }
@@ -441,15 +512,24 @@
     if (!settings) throw new Error('Unknown difficulty: ' + level);
     const rand = seed === undefined ? Math.random : mulberry32(seed);
     const { width, height } = settings;
-    for (let attempt = 0; attempt < 200; attempt++) {
+    let fallback = null;
+    for (let attempt = 0; attempt < 400; attempt++) {
       const board = buildBoard(width, height, rand);
       if (!board) continue;
       const { regions, solution } = board;
       const geo = geometry(width, height, regions);
       if (!acceptableRegions(geo)) continue;
       const puzzle = digClues(solution, geo, settings, rand);
-      return { width, height, regions, puzzle, solution };
+      const result = { width, height, regions, puzzle, solution };
+      // Too easy for this level? Try another board (keep one just in case).
+      if (settings.harder && solveLogic(puzzle, geo, settings.harder)) {
+        fallback = fallback || result;
+        if (attempt < 60) continue;
+        return fallback;
+      }
+      return result;
     }
+    if (fallback) return fallback;
     throw new Error('Could not generate a Tectonic puzzle');
   }
 

@@ -129,6 +129,71 @@
     tectonic: 'Ett block med 3 rutor får 1, 2 och 3. Lika siffror får aldrig nudda varandra – inte ens snett!',
   };
 
+  /* ---------------- Tectonic puzzles in the background ---------------- */
+
+  const TEC_READY_KEY = 'sudoku-fun-tectonic-ready-v1'; // one ready puzzle per level
+  let tecWorker = null;
+  let tecSeq = 0;
+  const tecWaiting = new Map();
+  const tecPrefetching = {};
+
+  // Builds a puzzle in a Web Worker; falls back to building it here.
+  function tecGenerate(level) {
+    return new Promise((resolve) => {
+      const inPage = () => setTimeout(() => resolve(TEC.generate(level)), 30);
+      if (tecWorker === null) {
+        try {
+          tecWorker = new Worker('js/tectonic-worker.js');
+          tecWorker.onmessage = (e) => {
+            const done = tecWaiting.get(e.data.id);
+            tecWaiting.delete(e.data.id);
+            if (done) done.resolve(e.data.puzzle);
+          };
+          tecWorker.onerror = () => {
+            tecWorker = false;
+            tecWaiting.forEach((w) => w.resolve(TEC.generate(w.level)));
+            tecWaiting.clear();
+          };
+        } catch (err) {
+          tecWorker = false; // e.g. opened as a local file
+        }
+      }
+      if (!tecWorker) return inPage();
+      const id = ++tecSeq;
+      tecWaiting.set(id, { resolve, level });
+      tecWorker.postMessage({ id, level });
+    });
+  }
+
+  function isReadyValid(p, level) {
+    const lv = TEC.LEVELS[level];
+    return p && p.width === lv.width && p.height === lv.height && Array.isArray(p.regions);
+  }
+
+  function takeReady(level) {
+    const all = store.get(TEC_READY_KEY) || {};
+    const p = all[level];
+    delete all[level];
+    store.set(TEC_READY_KEY, all);
+    return isReadyValid(p, level) ? p : null;
+  }
+
+  // Prepares the next puzzle for a level so starting a game is instant.
+  function prefetchTectonic(level) {
+    if (tecPrefetching[level] || isReadyValid((store.get(TEC_READY_KEY) || {})[level], level)) return;
+    tecPrefetching[level] = true;
+    tecGenerate(level).then((p) => {
+      const all = store.get(TEC_READY_KEY) || {};
+      all[level] = p;
+      store.set(TEC_READY_KEY, all);
+      tecPrefetching[level] = false;
+    });
+  }
+
+  function prefetchAllTectonic() {
+    ['easy', 'medium', 'hard'].forEach(prefetchTectonic);
+  }
+
   function isKnownMode(mode) {
     return !!S.VARIANTS[mode] || mode === 'tectonic';
   }
@@ -483,9 +548,17 @@
     });
   }
 
+  // A fixed 5 x 5 Tectonic for the picture on the mode card (A–I = regions).
+  const PREVIEW_TECTONIC = (() => {
+    const rows = ['AABBB', 'ACCBB', 'DCCEE', 'DDFEE', 'GDFFH'];
+    const ids = [...rows.join('')].map((ch) => ch.charCodeAt(0) - 65);
+    const puzzle = [2, 1, 0, 3, 0, 0, 0, 4, 0, 2, 0, 0, 2, 0, 0, 0, 4, 0, 0, 4, 1, 0, 1, 3, 1];
+    return { width: 5, height: 5, regions: ids, puzzle };
+  })();
+
   // Small picture of a Tectonic board: tinted regions with a few numbers.
   function buildTectonicPreview(el) {
-    const p = TEC.generate('easy', 11);
+    const p = PREVIEW_TECTONIC;
     const t = TEC.geometry(p.width, p.height, p.regions);
     const tints = regionTints(t);
     el.classList.add('tec');
@@ -495,19 +568,13 @@
       const cell = document.createElement('span');
       cell.className = 'pcell tcell';
       cell.style.setProperty('--tint', `var(--d${tints[t.unitOf[i]]})`);
-      const r = Math.floor(i / p.width);
-      const c = i % p.width;
-      const other = (rr, cc) => rr < 0 || cc < 0 || rr >= p.height || cc >= p.width || t.unitOf[rr * p.width + cc] !== t.unitOf[i];
-      if (other(r - 1, c)) cell.classList.add('et');
-      if (other(r + 1, c)) cell.classList.add('eb');
-      if (other(r, c - 1)) cell.classList.add('el');
-      if (other(r, c + 1)) cell.classList.add('er');
       if (p.puzzle[i]) {
         cell.textContent = p.puzzle[i];
         cell.style.setProperty('--dc', `var(--d${p.puzzle[i]})`);
       }
       el.appendChild(cell);
     }
+    el.insertAdjacentHTML('beforeend', regionLinesSvg(p.width, p.height, t.unitOf));
   }
 
   function buildPreview(el, v) {
@@ -729,7 +796,7 @@
 
   /* ---------------- Game setup ---------------- */
 
-  function newGame(mode, level, player) {
+  async function newGame(mode, level, player) {
     if (!PLAYERS[player]) {
       Sound.nope();
       replayAnimation($('#players'), 'wiggle');
@@ -737,7 +804,19 @@
       toast('Välj vem som spelar först 👆');
       return;
     }
-    const g = mode === 'tectonic' ? TEC.generate(level) : S.generate(mode, level);
+    let g;
+    if (mode === 'tectonic') {
+      g = takeReady(level);
+      if (!g) {
+        if (!$('#loading').hidden) return; // already building one
+        $('#loading').hidden = false;
+        g = await tecGenerate(level);
+        $('#loading').hidden = true;
+      }
+      prefetchTectonic(level); // the next one for this level
+    } else {
+      g = S.generate(mode, level);
+    }
     game = {
       id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       player,
@@ -800,6 +879,46 @@
    * sides where the neighbouring cell belongs to another region, and regions
    * get alternating soft tints (no two touching regions share a tint).
    */
+  /*
+   * Grid and region lines as one SVG drawing on top of the cells: thin lines
+   * inside regions, thick lines on region borders. Borders are merged into
+   * long strokes with round ends, so corners and joins look smooth.
+   */
+  function regionLinesSvg(width, height, unitOf) {
+    const thin = [];
+    const thick = [];
+    const same = (a, b) => unitOf[a] === unitOf[b];
+    // Horizontal lines between row r-1 and r, vertical between column c-1 and c
+    for (let r = 1; r < height; r++) {
+      let start = null;
+      let kind = null;
+      for (let c = 0; c <= width; c++) {
+        const k = c < width ? (same((r - 1) * width + c, r * width + c) ? 'thin' : 'thick') : null;
+        if (k !== kind) {
+          if (kind) (kind === 'thick' ? thick : thin).push(`M${start} ${r}H${c}`);
+          start = c;
+          kind = k;
+        }
+      }
+    }
+    for (let c = 1; c < width; c++) {
+      let start = null;
+      let kind = null;
+      for (let r = 0; r <= height; r++) {
+        const k = r < height ? (same(r * width + c - 1, r * width + c) ? 'thin' : 'thick') : null;
+        if (k !== kind) {
+          if (kind) (kind === 'thick' ? thick : thin).push(`M${c} ${start}V${r}`);
+          start = r;
+          kind = k;
+        }
+      }
+    }
+    return `<svg class="tlines" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
+      <path class="thin" d="${thin.join('')}"/>
+      <path class="thick" d="${thick.join('')}"/>
+    </svg>`;
+  }
+
   function buildTectonicBoard() {
     const G = geo();
     const t = G.tectonic;
@@ -809,22 +928,19 @@
     board.style.setProperty('--n', G.width);
     board.style.setProperty('--cols', G.width);
     board.style.setProperty('--rows', G.height);
+    const grid = document.createElement('div');
+    grid.className = 'tgrid';
+    board.appendChild(grid);
     const tints = regionTints(t);
     cellEls = [];
     for (let i = 0; i < G.cells; i++) {
       const cell = makeCell(i);
-      const r = Math.floor(i / G.width);
-      const c = i % G.width;
-      const other = (rr, cc) => rr < 0 || cc < 0 || rr >= G.height || cc >= G.width || t.unitOf[rr * G.width + cc] !== t.unitOf[i];
-      if (other(r - 1, c)) cell.classList.add('et');
-      if (other(r + 1, c)) cell.classList.add('eb');
-      if (other(r, c - 1)) cell.classList.add('el');
-      if (other(r, c + 1)) cell.classList.add('er');
       cell.style.setProperty('--tint', `var(--d${tints[t.unitOf[i]]})`);
       cellEls.push(cell);
-      board.appendChild(cell);
+      grid.appendChild(cell);
       renderCell(i);
     }
+    grid.insertAdjacentHTML('beforeend', regionLinesSvg(G.width, G.height, t.unitOf));
     renderHighlights();
   }
 
@@ -1416,6 +1532,7 @@
 
   function init() {
     migrateOldSave();
+    if (prefs.mode === 'tectonic') setTimeout(prefetchAllTectonic, 500);
     applyTheme();
     buildPlayers();
     document.querySelectorAll('[data-preview]').forEach((el) =>
@@ -1427,6 +1544,7 @@
         prefs.mode = card.dataset.mode;
         lbMode = prefs.mode;
         savePrefs();
+        if (prefs.mode === 'tectonic') prefetchAllTectonic();
         renderHome();
         burst(card, 6);
       })

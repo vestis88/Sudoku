@@ -200,14 +200,40 @@ Sources: [dcode](https://www.dcode.fr/tectonic-solver),
 [logic-puzzles-online](https://logic-puzzles-online.com/suguru/),
 [Puzzolve strategies](https://puzzolve.com/intel/suguru-strategies).
 
-### Solving techniques (used to grade difficulty)
+### Difficulty
 
-| Level | Technique |
-| ----- | --------- |
-| 1 | **Naked single**: a cell has one candidate left (after removing numbers used in its region and by its 8 neighbours). |
+Tectonic difficulty is set by the **techniques a player needs**, not by the
+board size: publishers such as Denksport rate their Tectonics with 1–12 stars
+on the same kind of grid, and puzzle apps grade by the hardest technique
+used (e.g. hidden single 3 points, naked pair 5, hidden pair 6)
+([Denksport](https://www.denksport.com/puzzel/logisch/tectonic/tectonic-7-9),
+[Keesing Tectonic](https://play.google.com/store/apps/details?id=com.keesing.android.tectonic),
+[PZL Suguru](https://pzl.org.uk/suguru.html),
+[The Puzzle Labs](https://www.thepuzzlelabs.com/suguru/how-to-solve-suguru-puzzles)).
+The number of clues matters less: a puzzle with few clues can still be easy
+if every step is a single.
+
+The app therefore always uses a **9 × 9** board and grades by technique tier:
+
+| Tier | Technique |
+| ---- | --------- |
+| 1 | **Naked single**: one candidate left after removing numbers used in the region and by the 8 touching cells. |
 | 1 | **Hidden single**: a number fits in only one cell of its region. |
-| 2 | **Cross-region elimination**: if every possible spot for number d in a region touches cell X (outside that region), X cannot be d. |
-| 2 | **Naked pair**: two cells of a region with the same two candidates hold those numbers, so they are removed from the rest of the region and from any cell touching both. |
+| 2 | **Forbidden neighbour**: a cell touching every possible spot of number d in another region cannot be d. |
+| 2 | **Naked pair**: two cells of a region with the same two candidates; those numbers leave the rest of the region and any cell touching both. |
+| 2 | **Hidden pair**: two numbers that fit only in the same two cells of a region; those cells lose their other candidates. |
+| 3 | **Naked triple**: three cells of a region sharing three candidates. |
+| 3 | **What if**: on a cell with two candidates, if one of them leads to a contradiction (using tier 2), it is the other. |
+
+| Level | Needs | Guarantee | Clues (typical) |
+| ----- | ----- | --------- | --------------- |
+| Lätt | tier 1 | solvable with singles | 32 (40 %) |
+| Mellan | tier 2 | **not** solvable with singles alone | 5–16 |
+| Svår | tier 3 | **not** solvable with tier 2 | 7–14 |
+
+Generated puzzles that turn out too easy for their level are rejected and a
+new board is built. In 40 puzzles per level all were unique, solvable with
+their tier and not with the tier below.
 
 ### Generation
 
@@ -227,21 +253,17 @@ depth-first search:
    another shape (backtracking, with an effort budget).
 
 Clues are then removed one by one while the puzzle stays solvable with the
-level's techniques (or, for Svår, stays uniquely solvable).
-
-| Level | Board | Clues | Needs |
-| ----- | ----- | ----- | ----- |
-| Lätt | 5 × 5 | ~44 % | singles only |
-| Mellan | 6 × 6 | ~30 % | singles plus cross-region eliminations and pairs |
-| Svår | 7 × 7 | as few as possible | any logic (only uniqueness is guaranteed) |
-
-In 100 puzzles per level every puzzle followed the rules and had exactly one
-solution. Generation takes 3–30 ms on average.
+level's tier. A 9 × 9 puzzle takes about 0.3–0.5 s to build, so the app
+builds puzzles in a Web Worker and keeps the next puzzle for each level
+ready, which makes starting a game instant.
 
 ### In the app
 
-* The board draws thick lines along region borders and gives regions soft
-  alternating tints (none in the grown-up themes).
+* The grid and region lines are drawn as one SVG on top of the cells, with
+  long strokes and round joins, and regions get soft alternating tints
+  (none in the grown-up themes).
+* Tectonic results from before the switch to 9 × 9 are left out of the
+  leaderboard.
 * Selecting a cell highlights its region and its 8 touching cells, the
   cells that constrain it.
 * The number buttons count how many of each number are still missing (the

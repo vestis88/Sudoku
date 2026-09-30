@@ -25,6 +25,14 @@
     '🍦', '🍬', '🍭', '🍓', '🌸', '🌻', '🎸', '🏀',
   ];
   const MODES = ['mini', 'classic', 'tectonic'];
+  // Results from before a mode changed its board are left out. Tectonic
+  // moved from 5x5-7x7 boards to 9x9 for every level on this date.
+  const RETIRED_BEFORE = { tectonic: '2026-09-30T19:40:00Z' };
+
+  function isCurrent(r) {
+    const since = RETIRED_BEFORE[r.mode];
+    return !since || (r.date || '') >= since;
+  }
   const LEVELS = ['easy', 'medium', 'hard'];
   const CACHE_KEY = 'sudoku-fun-results-v1';
   const OUTBOX_KEY = 'sudoku-fun-outbox-v1';
@@ -112,7 +120,7 @@
       }
     }
     for (const r of results) {
-      if (!isValid(r)) continue;
+      if (!isValid(r) || !isCurrent(r)) continue;
       const bucket = out[r.mode][r.level];
       bucket.count++;
       bucket.byPlayer[r.player]++;
@@ -256,7 +264,7 @@
 
     return {
       enabled,
-      results: cache,
+      results: () => cache().filter(isCurrent),
       pending: () => outbox().length,
       status: () => status,
       add,

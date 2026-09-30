@@ -383,10 +383,14 @@
   background: var(--given-bg);
 }
 
-/* Tectonic draws its own lines, so no gaps between cells */
+/* Tectonic draws its own lines */
 [data-theme='elegant'] .board.tectonic,
 [data-theme='plain'] .board.tectonic {
-  gap: 0;
   padding: 0;
-  border: 2px solid var(--grid-thick);
+  background: none;
+}
+
+[data-theme='elegant'] .tgrid,
+[data-theme='plain'] .tgrid {
+  border-radius: 4px;
 }

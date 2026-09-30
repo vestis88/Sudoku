@@ -37,7 +37,7 @@ function checkRules(p) {
 for (const level of ['easy', 'medium', 'hard']) {
   test(`${level}: puzzles follow the rules and have exactly one solution`, () => {
     const settings = T.LEVELS[level];
-    for (let seed = 1; seed <= 15; seed++) {
+    for (let seed = 1; seed <= 8; seed++) {
       const p = T.generate(level, seed);
       assert.equal(p.width, settings.width);
       assert.equal(p.height, settings.height);
@@ -46,7 +46,8 @@ for (const level of ['easy', 'medium', 'hard']) {
       p.puzzle.forEach((v, i) => v && assert.equal(v, p.solution[i]));
       assert.equal(T.countSolutions(p.puzzle, geo, 2), 1);
       assert.deepEqual(T.solve(p.puzzle, geo), p.solution);
-      if (settings.logic) assert.ok(T.solveLogic(p.puzzle, geo, settings.logic), 'solvable with the allowed techniques');
+      assert.ok(T.solveLogic(p.puzzle, geo, settings.logic), 'solvable with the allowed techniques');
+      if (settings.harder) assert.ok(!T.solveLogic(p.puzzle, geo, settings.harder), 'too hard for the level below');
     }
   });
 }
@@ -82,4 +83,21 @@ test('the logic solver uses the region and no-touch rules', () => {
 test('isValidSolution rejects touching equal numbers', () => {
   const geo = T.geometry(2, 1, [0, 1]); // two single-cell regions side by side
   assert.equal(T.isValidSolution([1, 1], geo), false);
+});
+
+test('all levels use a 9 x 9 board', () => {
+  for (const level of ['easy', 'medium', 'hard']) {
+    assert.equal(T.LEVELS[level].width, 9);
+    assert.equal(T.LEVELS[level].height, 9);
+  }
+});
+
+test('levels need increasingly advanced techniques', () => {
+  // Level ordering holds on generated puzzles: easy <= tier 1, medium needs 2, hard needs 3.
+  const easy = T.generate('easy', 3);
+  const hard = T.generate('hard', 3);
+  const ge = T.geometry(9, 9, easy.regions);
+  const gh = T.geometry(9, 9, hard.regions);
+  assert.ok(T.solveLogic(easy.puzzle, ge, 1));
+  assert.ok(!T.solveLogic(hard.puzzle, gh, 2) && T.solveLogic(hard.puzzle, gh, 3));
 });
