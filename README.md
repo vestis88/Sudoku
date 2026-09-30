@@ -26,6 +26,9 @@ no build step, no dependencies, works offline and collects no data.
   three best times and the number of games played per board size and level.
   Results sync between devices through Firebase; see
   [docs/FIREBASE.md](docs/FIREBASE.md) for the one-time setup.
+* **Timer and records**: a clock runs during the game next to the player's
+  best time (🏅). Beating your own best (or everyone's) triggers a big
+  "NYTT REKORD!" celebration with confetti cannons and a fanfare.
 * Undo, erase, hints, confetti when you win, sounds (can be muted), and
   progress is saved automatically.
 * Each number has its own colour, and the layout adapts to phones, tablets

@@ -82,7 +82,10 @@
     <header class="topbar">
       <button id="btn-home" class="round-btn" aria-label="Hem">🏠</button>
       <div class="topbar-title">
-        <span class="mini-logo">Sudoku Kul</span>
+        <span class="timer" role="timer" aria-label="Tid">
+          <span class="timer-icon">⏱</span><span id="timer-time">0:00</span>
+          <span id="timer-best" class="timer-best" hidden></span>
+        </span>
         <span id="chip" class="chip"></span>
       </div>
       <button id="btn-sound" class="round-btn" aria-label="Ljud på">🔊</button>
@@ -112,7 +115,9 @@
   <div id="win" class="overlay" hidden>
     <div class="win-card" role="dialog" aria-modal="true" aria-labelledby="win-title">
       <div class="win-trophy">🏆</div>
+      <div id="win-banner" class="record-banner" hidden aria-label="Nytt rekord!"></div>
       <h2 id="win-title">Du klarade det!</h2>
+      <p id="win-record-detail" class="record-detail" hidden></p>
       <p id="win-record" class="win-record" hidden></p>
       <div id="win-stars" class="win-stars"></div>
       <p id="win-info" class="win-info"></p>

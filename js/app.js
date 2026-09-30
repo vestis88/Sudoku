@@ -52,6 +52,7 @@
   let noteEls = {};
   let doneDigits = new Set();
   let checkTimer = null;
+  let clockTimer = null;
   let clockStart = Date.now();
   let warnedFull = false;
 
@@ -94,6 +95,11 @@
       hint: () => seq([1047, 1319, 1568], 0.06, 0.12),
       done: () => seq([523, 659, 784, 1047], 0.07, 0.16),
       win: () => seq([523, 659, 784, 1047, 784, 1047, 1319], 0.12, 0.22),
+      record: () => {
+        seq([523, 523, 523, 698, 880, 784, 880, 1047, 1319, 1568], 0.13, 0.3);
+        tone(262, 1.6, 'triangle', 1.2, 0.08);
+        tone(392, 1.6, 'triangle', 1.2, 0.06);
+      },
     };
   })();
 
@@ -159,55 +165,110 @@
 
   /* ---------------- Confetti ---------------- */
 
-  function confetti() {
-    const canvas = $('#confetti');
-    const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = innerWidth * dpr;
-    canvas.height = innerHeight * dpr;
-    ctx.scale(dpr, dpr);
-    const colors = ['#ef476f', '#f7801a', '#ffc93c', '#20a75a', '#0fa9c0', '#3a70f5', '#8b5cf6', '#e0409a'];
-    const count = reduceMotion ? 40 : 180;
-    const pieces = Array.from({ length: count }, () => ({
-      x: innerWidth / 2 + (Math.random() - 0.5) * 120,
-      y: innerHeight * 0.45,
-      vx: (Math.random() - 0.5) * 16,
-      vy: -Math.random() * 16 - 6,
-      size: 6 + Math.random() * 8,
-      rot: Math.random() * Math.PI,
-      vr: (Math.random() - 0.5) * 0.3,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      round: Math.random() < 0.3,
-    }));
-    const start = performance.now();
-    function frame(now) {
-      ctx.clearRect(0, 0, innerWidth, innerHeight);
-      const t = now - start;
-      for (const p of pieces) {
-        p.vy += 0.35;
-        p.vx *= 0.99;
-        p.x += p.vx;
-        p.y += p.vy;
-        p.rot += p.vr;
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot);
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = Math.max(0, 1 - t / 4000);
-        if (p.round) {
-          ctx.beginPath();
-          ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
-        }
-        ctx.restore();
-      }
-      if (t < 4000) requestAnimationFrame(frame);
-      else ctx.clearRect(0, 0, innerWidth, innerHeight);
+  // One shared particle loop, so several bursts can run at the same time.
+  const Confetti = (function () {
+    const COLORS = ['#ef476f', '#f7801a', '#ffc93c', '#20a75a', '#0fa9c0', '#3a70f5', '#8b5cf6', '#e0409a'];
+    const GOLD = ['#ffc93c', '#ffd95a', '#ffe680', '#f7b500', '#fff3b0'];
+    let parts = [];
+    let running = false;
+    let ctx = null;
+
+    function setup() {
+      const canvas = $('#confetti');
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = innerWidth * dpr;
+      canvas.height = innerHeight * dpr;
+      ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-    requestAnimationFrame(frame);
-  }
+
+    // angle in degrees (-90 = straight up), spread in degrees
+    function burst(o) {
+      const n = reduceMotion ? Math.ceil(o.count / 5) : o.count;
+      const colors = o.colors || COLORS;
+      for (let k = 0; k < n; k++) {
+        const a = ((o.angle + (Math.random() - 0.5) * o.spread) * Math.PI) / 180;
+        const speed = o.power * (0.55 + Math.random() * 0.6);
+        parts.push({
+          x: o.x + (Math.random() - 0.5) * (o.width || 0),
+          y: o.y,
+          vx: Math.cos(a) * speed,
+          vy: Math.sin(a) * speed,
+          size: 6 + Math.random() * 8,
+          rot: Math.random() * Math.PI,
+          vr: (Math.random() - 0.5) * 0.3,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          shape: o.star ? 'star' : Math.random() < 0.3 ? 'round' : 'rect',
+          gravity: o.gravity == null ? 0.35 : o.gravity,
+          age: 0,
+          life: o.life || 4000,
+        });
+      }
+      if (!running) {
+        setup();
+        running = true;
+        let last = performance.now();
+        requestAnimationFrame(function frame(now) {
+          const dt = Math.min(50, now - last);
+          last = now;
+          ctx.clearRect(0, 0, innerWidth, innerHeight);
+          parts = parts.filter((p) => p.age < p.life && p.y < innerHeight + 60);
+          for (const p of parts) {
+            p.age += dt;
+            p.vy += p.gravity;
+            p.vx *= 0.99;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rot += p.vr;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.globalAlpha = Math.max(0, Math.min(1, (p.life - p.age) / 800));
+            ctx.fillStyle = p.color;
+            if (p.shape === 'star') {
+              ctx.font = `${p.size * 2}px sans-serif`;
+              ctx.fillText('⭐', -p.size, p.size);
+            } else if (p.shape === 'round') {
+              ctx.beginPath();
+              ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+            }
+            ctx.restore();
+          }
+          if (parts.length) requestAnimationFrame(frame);
+          else {
+            running = false;
+            ctx.clearRect(0, 0, innerWidth, innerHeight);
+          }
+        });
+      }
+    }
+
+    return {
+      // Normal win: one burst from the middle.
+      win() {
+        burst({ x: innerWidth / 2, y: innerHeight * 0.45, count: 180, angle: -90, spread: 120, power: 17, width: 120 });
+      },
+      // Record: cannons from both bottom corners, three times, plus falling gold stars.
+      record() {
+        [0, 700, 1400].forEach((delay) =>
+          setTimeout(() => {
+            burst({ x: 0, y: innerHeight, count: 110, angle: -60, spread: 30, power: 24 });
+            burst({ x: innerWidth, y: innerHeight, count: 110, angle: -120, spread: 30, power: 24 });
+          }, delay)
+        );
+        setTimeout(
+          () =>
+            burst({ x: innerWidth / 2, y: -20, count: 40, angle: 90, spread: 40, power: 3, width: innerWidth, gravity: 0.08, star: true, life: 6000 }),
+          300
+        );
+        burst({ x: innerWidth / 2, y: innerHeight * 0.22, count: 60, angle: -90, spread: 360, power: 10, colors: GOLD });
+      },
+    };
+  })();
+
 
   /* ---------------- Home screen ---------------- */
 
@@ -256,7 +317,7 @@
   }
 
   function formatTime(ms) {
-    const secs = Math.round(ms / 1000);
+    const secs = Math.floor(ms / 1000);
     const h = Math.floor(secs / 3600);
     const m = Math.floor((secs % 3600) / 60);
     const s = String(secs % 60).padStart(2, '0');
@@ -354,6 +415,7 @@
   }
 
   function showHome() {
+    stopClock();
     if (game && !game.done) saveGame();
     clearChecks();
     document.body.classList.remove('playing');
@@ -405,7 +467,9 @@
     $('#game').hidden = false;
     document.body.classList.add('playing');
     const lvl = LEVELS[game.level];
-    $('#chip').textContent = `${MODES[game.mode]} · ${lvl.icon} ${lvl.label}`;
+    const who = game.player ? `${playerLabel(game.player)} · ` : '';
+    $('#chip').textContent = `${who}${MODES[game.mode]} · ${lvl.icon} ${lvl.label}`;
+    startClock();
     buildBoard();
     buildPad();
     doneDigits = new Set();
@@ -809,12 +873,51 @@
     burst(cellEls[target], 6);
   }
 
-  // Saves the solve time. Returns a record message, or '' if none.
+  function bestTime(mode, level, player) {
+    const times = results
+      .results()
+      .filter((r) => r.mode === mode && r.level === level && (!player || r.player === player))
+      .map((r) => r.timeMs);
+    return times.length ? Math.min(...times) : 0;
+  }
+
+  /* ---------------- Timer ---------------- */
+
+  function renderClock() {
+    if (!game) return;
+    $('#timer-time').textContent = formatTime(game.done ? game.elapsed : elapsedMs());
+  }
+
+  function startClock() {
+    stopClock();
+    const best = game.player ? bestTime(game.mode, game.level, game.player) : 0;
+    $('#timer-best').hidden = !best;
+    $('#timer-best').textContent = best ? `🏅 ${formatTime(best)}` : '';
+    $('#timer-best').title = best ? 'Ditt rekord' : '';
+    renderClock();
+    clockTimer = setInterval(renderClock, 250);
+  }
+
+  function stopClock() {
+    clearInterval(clockTimer);
+    clockTimer = null;
+  }
+
+  function formatDiff(ms) {
+    const secs = Math.max(1, Math.round(ms / 1000));
+    return secs < 60 ? `${secs} s` : formatTime(secs * 1000);
+  }
+
+  /*
+   * Saves the solve time and works out whether it is a record:
+   * 'all' (fastest of everyone), 'personal' (beat own best), 'first'
+   * (first solve of this board and level) or ''.
+   */
   function recordResult() {
-    if (!game.player || game.recorded) return '';
-    const before = results.results().filter((r) => r.mode === game.mode && r.level === game.level);
-    const best = Math.min(...before.map((r) => r.timeMs));
-    const mine = Math.min(...before.filter((r) => r.player === game.player).map((r) => r.timeMs));
+    const none = { kind: '', prevMine: 0 };
+    if (!game.player || game.recorded) return none;
+    const best = bestTime(game.mode, game.level);
+    const mine = bestTime(game.mode, game.level, game.player);
     const saved = results.add({
       player: game.player,
       mode: game.mode,
@@ -823,22 +926,39 @@
       hints: game.hints,
     });
     game.recorded = true;
-    if (!saved) return '';
-    if (game.elapsed < best && before.length) return '🏆 Nytt rekord för alla!';
-    if (game.elapsed < mine) return '⭐ Ditt bästa hittills!';
-    return '';
+    if (!saved) return none;
+    const beatsAll = best > 0 && game.elapsed < best;
+    if (beatsAll) return { kind: 'all', prevMine: mine };
+    if (!mine) return { kind: 'first', prevMine: 0 };
+    if (game.elapsed < mine) return { kind: 'personal', prevMine: mine };
+    return none;
+  }
+
+  function buildBanner(text) {
+    const colors = ['--d1', '--d2', '--d3', '--d4', '--d5', '--d6', '--d7', '--d8'];
+    return [...text]
+      .map((ch, i) =>
+        ch === ' '
+          ? '<span class="space"></span>'
+          : `<span style="color:var(${colors[i % colors.length]});animation-delay:${i * 0.07}s">${ch}</span>`
+      )
+      .join('');
   }
 
   function win() {
     game.done = true;
     game.elapsed = elapsedMs();
+    stopClock();
+    renderClock();
     $('#toast').className = 'toast';
     const record = recordResult();
     store.set(SAVE_KEY, game);
     clearChecks();
     selected = -1;
     renderHighlights();
-    Sound.win();
+    const isRecord = record.kind === 'all' || record.kind === 'personal';
+    if (isRecord) Sound.record();
+    else Sound.win();
     cellEls.forEach((el, i) => {
       el.style.setProperty('--i', i);
       replayAnimation(el, 'rainbow');
@@ -848,12 +968,29 @@
     const lvl = LEVELS[game.level];
     const who = game.player ? `${playerLabel(game.player)} · ` : '';
     setTimeout(() => {
-      confetti();
+      if (isRecord) Confetti.record();
+      else Confetti.win();
+      const where = `${MODES[game.mode]} · ${lvl.label}`;
+      $('.win-card').classList.toggle('is-record', isRecord);
+      $('#win-banner').hidden = !isRecord;
+      $('#win-banner').innerHTML = isRecord ? buildBanner('NYTT REKORD!') : '';
+      $('#win-title').textContent = isRecord ? `Wow, ${game.player}!` : 'Du klarade det!';
+      $('#win-record-detail').hidden = !isRecord;
+      $('#win-record-detail').innerHTML = !isRecord
+        ? ''
+        : record.prevMine
+          ? `Förut <s>${formatTime(record.prevMine)}</s> → nu <b>${time}</b><br>${formatDiff(record.prevMine - game.elapsed)} snabbare! 🚀`
+          : `Din första tid: <b>${time}</b> 🚀`;
+      const line = record.kind === 'all'
+        ? `🏆 Snabbast av alla på ${where}!`
+        : record.kind === 'first'
+          ? `🎉 Första gången du klarar ${where}!`
+          : '';
       $('#win-stars').innerHTML = [1, 2, 3]
         .map((n) => `<span class="${n <= stars ? '' : 'off'}" style="animation-delay:${0.3 + n * 0.2}s">⭐</span>`)
         .join('');
-      $('#win-record').hidden = !record;
-      $('#win-record').textContent = record;
+      $('#win-record').hidden = !line;
+      $('#win-record').textContent = line;
       $('#win-info').textContent =
         `${who}${MODES[game.mode]} · ${lvl.icon} ${lvl.label} · ⏱ ${time}` +
         (game.hints ? ` · 💡 ${game.hints} ${game.hints > 1 ? 'ledtrådar' : 'ledtråd'}` : ' · inga ledtrådar!');
