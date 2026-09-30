@@ -1,0 +1,23 @@
+rules_version = '2';
+
+// Sudoku Kul leaderboard.
+// Anyone can read results and add a new one, but only with the expected
+// fields and values. Results can never be changed or deleted from the app.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /results/{resultId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['player', 'mode', 'level', 'timeMs', 'hints', 'date'])
+        && request.resource.data.player in ['Wille', 'Johan', 'Bim', 'Frans']
+        && request.resource.data.mode in ['mini', 'classic']
+        && request.resource.data.level in ['easy', 'medium', 'hard']
+        && request.resource.data.timeMs is int
+        && request.resource.data.timeMs >= 5000
+        && request.resource.data.timeMs <= 86400000
+        && request.resource.data.hints is int
+        && request.resource.data.hints >= 0
+        && request.resource.data.date is timestamp;
+      allow update, delete: if false;
+    }
+  }
+}

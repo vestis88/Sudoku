@@ -21,6 +21,11 @@ no build step, no dependencies, works offline and collects no data.
   shrink as more are added.
   Entering an answer replaces the notes in that square and removes that number
   from the notes in the same row, column and box.
+* **Players and leaderboard**: pick who is playing (Wille, Johan, Bim or
+  Frans) before starting. Solve times are saved and the start screen shows the
+  three best times and the number of games played per board size and level.
+  Results sync between devices through Firebase; see
+  [docs/FIREBASE.md](docs/FIREBASE.md) for the one-time setup.
 * Undo, erase, hints, confetti when you win, sounds (can be muted), and
   progress is saved automatically.
 * Each number has its own colour, and the layout adapts to phones, tablets
@@ -41,12 +46,15 @@ It can also be hosted as-is on GitHub Pages.
 ## Develop
 
 ```sh
-npm test           # engine unit tests (Node 18+)
+npm test           # engine and leaderboard unit tests (Node 18+)
 ```
 
 | Path | What |
 | ---- | ---- |
 | `js/sudoku.js` | Puzzle engine: generator, solver, difficulty grading |
 | `js/app.js` | Game UI, animations, sounds, saving |
+| `js/leaderboard.js` | Results, statistics and Firestore sync |
+| `js/firebase-config.js` | Firebase project settings (empty = this device only) |
+| `firestore.rules` | Firestore security rules for the leaderboard |
 | `css/style.css` | Styles and responsive layout |
 | `docs/INVESTIGATION.md` | Research on sudoku logic, existing libraries and the layout study |

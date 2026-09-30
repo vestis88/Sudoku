@@ -39,6 +39,12 @@
 
   const prefs = Object.assign({ mode: 'mini', sound: true }, store.get(PREF_KEY) || {});
 
+  const LB = window.Leaderboard;
+  const results = LB.create(window.SUDOKU_FIREBASE);
+  const PLAYERS = Object.fromEntries(LB.PLAYERS.map((p) => [p.name, p]));
+  if (!PLAYERS[prefs.player]) delete prefs.player;
+  let lbMode = prefs.mode;
+
   let game = null;
   let selected = -1;
   let cellEls = [];
@@ -249,16 +255,102 @@
     }
   }
 
+  function formatTime(ms) {
+    const secs = Math.round(ms / 1000);
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = String(secs % 60).padStart(2, '0');
+    return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+  }
+
+  function playerLabel(name) {
+    const p = PLAYERS[name];
+    return p ? `${p.icon} ${p.name}` : '';
+  }
+
+  function buildPlayers() {
+    const wrap = $('#players');
+    LB.PLAYERS.forEach((p) => {
+      const btn = document.createElement('button');
+      btn.className = 'player-btn';
+      btn.setAttribute('role', 'radio');
+      btn.dataset.player = p.name;
+      btn.style.setProperty('--pc', p.color);
+      btn.innerHTML = `<span class="player-icon">${p.icon}</span><span class="player-name">${p.name}</span>`;
+      btn.addEventListener('click', () => {
+        prefs.player = p.name;
+        savePrefs();
+        renderHome();
+        burst(btn, 6);
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
   function renderHome() {
     document.querySelectorAll('.mode-card').forEach((card) => {
       card.setAttribute('aria-checked', String(card.dataset.mode === prefs.mode));
     });
+    document.querySelectorAll('.player-btn').forEach((btn) => {
+      btn.setAttribute('aria-checked', String(btn.dataset.player === prefs.player));
+    });
+    $('.levels').classList.toggle('locked', !prefs.player);
     const saved = store.get(SAVE_KEY);
     const canContinue = saved && !saved.done && S.VARIANTS[saved.mode];
     $('#continue').hidden = !canContinue;
     if (canContinue) {
-      $('#continue-label').textContent = `${MODES[saved.mode]} · ${LEVELS[saved.level].icon} ${LEVELS[saved.level].label}`;
+      const who = saved.player ? `${playerLabel(saved.player)} · ` : '';
+      $('#continue-label').textContent = `${who}${MODES[saved.mode]} · ${LEVELS[saved.level].icon} ${LEVELS[saved.level].label}`;
     }
+    renderLeaderboard();
+  }
+
+  function renderLeaderboard() {
+    document.querySelectorAll('.lb-tab').forEach((tab) => {
+      tab.setAttribute('aria-selected', String(tab.dataset.mode === lbMode));
+    });
+    const status = results.status();
+    const pending = results.pending();
+    $('#lb-status').textContent = !results.enabled
+      ? '📱 Bara den här enheten'
+      : status === 'syncing'
+        ? '☁️ Synkar…'
+        : status === 'offline'
+          ? `📴 Offline${pending ? ` – ${pending} väntar` : ''}`
+          : status === 'synced'
+            ? '☁️ Synkad'
+            : '☁️';
+    const stats = LB.stats(results.results())[lbMode];
+    const medals = ['🥇', '🥈', '🥉'];
+    $('#lb-levels').innerHTML = LB.LEVELS.map((level) => {
+      const s = stats[level];
+      const lvl = LEVELS[level];
+      const best = s.best.length
+        ? `<ol class="lb-best">${s.best
+            .map(
+              (r, k) => `<li class="${r.player === prefs.player ? 'me' : ''}" style="--pc:${PLAYERS[r.player].color}">
+                <span class="lb-medal">${medals[k]}</span>
+                <span class="lb-player">${playerLabel(r.player)}</span>
+                <span class="lb-time">${formatTime(r.timeMs)}${r.hints ? `<small title="Ledtrådar">💡${Number(r.hints)}</small>` : ''}</span>
+              </li>`
+            )
+            .join('')}</ol>`
+        : '<p class="lb-empty">Ingen har klarat den än – bli först! 🌟</p>';
+      const played = LB.PLAYERS.map(
+        (p) =>
+          `<span class="lb-chip" style="--pc:${p.color}" title="${p.name}: ${s.byPlayer[p.name]} spelade">${p.icon} ${s.byPlayer[p.name]}</span>`
+      ).join('');
+      return `<div class="lb-card">
+        <div class="lb-card-head"><span class="lb-level">${lvl.icon} ${lvl.label}</span><span class="lb-count">${s.count} ${s.count === 1 ? 'spelad' : 'spelade'}</span></div>
+        ${best}
+        <div class="lb-played" aria-label="Spelade per spelare">${played}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function refreshLeaderboard() {
+    renderLeaderboard();
+    results.sync().then(renderLeaderboard);
   }
 
   function showHome() {
@@ -269,13 +361,22 @@
     $('#win').hidden = true;
     $('#home').hidden = false;
     renderHome();
+    refreshLeaderboard();
   }
 
   /* ---------------- Game setup ---------------- */
 
-  function newGame(mode, level) {
+  function newGame(mode, level, player) {
+    if (!PLAYERS[player]) {
+      Sound.nope();
+      replayAnimation($('#players'), 'wiggle');
+      $('#players').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      toast('Välj vem som spelar först 👆');
+      return;
+    }
     const g = S.generate(mode, level);
     game = {
+      player,
       mode,
       level,
       puzzle: g.puzzle,
@@ -708,10 +809,31 @@
     burst(cellEls[target], 6);
   }
 
+  // Saves the solve time. Returns a record message, or '' if none.
+  function recordResult() {
+    if (!game.player || game.recorded) return '';
+    const before = results.results().filter((r) => r.mode === game.mode && r.level === game.level);
+    const best = Math.min(...before.map((r) => r.timeMs));
+    const mine = Math.min(...before.filter((r) => r.player === game.player).map((r) => r.timeMs));
+    const saved = results.add({
+      player: game.player,
+      mode: game.mode,
+      level: game.level,
+      timeMs: game.elapsed,
+      hints: game.hints,
+    });
+    game.recorded = true;
+    if (!saved) return '';
+    if (game.elapsed < best && before.length) return '🏆 Nytt rekord för alla!';
+    if (game.elapsed < mine) return '⭐ Ditt bästa hittills!';
+    return '';
+  }
+
   function win() {
     game.done = true;
     game.elapsed = elapsedMs();
     $('#toast').className = 'toast';
+    const record = recordResult();
     store.set(SAVE_KEY, game);
     clearChecks();
     selected = -1;
@@ -722,16 +844,18 @@
       replayAnimation(el, 'rainbow');
     });
     const stars = game.hints === 0 ? 3 : game.hints <= 2 ? 2 : 1;
-    const secs = Math.round(game.elapsed / 1000);
-    const time = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+    const time = formatTime(game.elapsed);
     const lvl = LEVELS[game.level];
+    const who = game.player ? `${playerLabel(game.player)} · ` : '';
     setTimeout(() => {
       confetti();
       $('#win-stars').innerHTML = [1, 2, 3]
         .map((n) => `<span class="${n <= stars ? '' : 'off'}" style="animation-delay:${0.3 + n * 0.2}s">⭐</span>`)
         .join('');
+      $('#win-record').hidden = !record;
+      $('#win-record').textContent = record;
       $('#win-info').textContent =
-        `${MODES[game.mode]} · ${lvl.icon} ${lvl.label} · ⏱ ${time}` +
+        `${who}${MODES[game.mode]} · ${lvl.icon} ${lvl.label} · ⏱ ${time}` +
         (game.hints ? ` · 💡 ${game.hints} ${game.hints > 1 ? 'ledtrådar' : 'ledtråd'}` : ' · inga ledtrådar!');
       $('#win').hidden = false;
       $('#btn-again').focus();
@@ -792,19 +916,28 @@
 
   function init() {
     buildLogo();
+    buildPlayers();
     document.querySelectorAll('[data-preview]').forEach((el) => buildPreview(el, S.VARIANTS[el.dataset.preview]));
 
     document.querySelectorAll('.mode-card').forEach((card) =>
       card.addEventListener('click', () => {
         prefs.mode = card.dataset.mode;
+        lbMode = prefs.mode;
         savePrefs();
         renderHome();
         burst(card, 6);
       })
     );
     document.querySelectorAll('.level').forEach((btn) =>
-      btn.addEventListener('click', () => newGame(prefs.mode, btn.dataset.level))
+      btn.addEventListener('click', () => newGame(prefs.mode, btn.dataset.level, prefs.player))
     );
+    document.querySelectorAll('.lb-tab').forEach((tab) =>
+      tab.addEventListener('click', () => {
+        lbMode = tab.dataset.mode;
+        renderLeaderboard();
+      })
+    );
+    window.addEventListener('online', refreshLeaderboard);
     $('#continue').addEventListener('click', () => {
       const saved = store.get(SAVE_KEY);
       if (!saved) return;
@@ -822,7 +955,7 @@
     $('#btn-erase').addEventListener('click', erase);
     $('#btn-hint').addEventListener('click', hint);
     $('#btn-check').addEventListener('click', check);
-    $('#btn-again').addEventListener('click', () => newGame(game.mode, game.level));
+    $('#btn-again').addEventListener('click', () => newGame(game.mode, game.level, game.player || prefs.player));
     $('#btn-win-home').addEventListener('click', showHome);
 
     document.addEventListener('keydown', onKey);
@@ -834,6 +967,7 @@
 
     renderSoundButton();
     renderHome();
+    refreshLeaderboard();
   }
 
   init();

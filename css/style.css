@@ -355,6 +355,216 @@ body.playing .float {
   letter-spacing: 2px;
 }
 
+/* Player picker */
+.players {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+  max-width: 460px;
+}
+
+.player-btn {
+  --pc: var(--accent);
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 4px 8px;
+  border: 4px solid transparent;
+  border-radius: 20px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  transition: transform 0.15s, border-color 0.2s, background-color 0.2s;
+}
+
+.player-icon {
+  font-size: 2.1rem;
+  line-height: 1.1;
+}
+
+.player-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.player-btn[aria-checked='true'] {
+  border-color: var(--pc);
+  background: color-mix(in srgb, var(--pc) 16%, white);
+  transform: translateY(-3px) scale(1.05);
+}
+
+.player-btn[aria-checked='true'] .player-icon {
+  animation: hop 1.6s ease-in-out infinite;
+}
+
+.players.wiggle {
+  animation: shake 0.45s ease;
+}
+
+.levels.locked .level {
+  filter: grayscale(0.7);
+  opacity: 0.55;
+}
+
+/* Leaderboard */
+.leaderboard {
+  width: 100%;
+  max-width: 760px;
+  margin-top: 18px;
+  padding: 16px 12px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: var(--shadow);
+}
+
+.lb-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0 4px;
+}
+
+.lb-title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.lb-status {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.lb-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0;
+  padding: 4px;
+  border-radius: 999px;
+  background: #eef1ff;
+}
+
+.lb-tab {
+  flex: 1;
+  min-height: 42px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.lb-tab[aria-selected='true'] {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(143, 107, 255, 0.35);
+}
+
+.lb-levels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.lb-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--card);
+  text-align: left;
+  box-shadow: 0 3px 0 rgba(43, 45, 66, 0.08);
+}
+
+.lb-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lb-level {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.lb-count {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #eef1ff;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.lb-best {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lb-best li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--pc) 10%, white);
+}
+
+.lb-best li.me {
+  box-shadow: inset 0 0 0 2px var(--pc);
+}
+
+.lb-medal {
+  font-size: 1.2rem;
+}
+
+.lb-player {
+  flex: 1;
+  font-weight: 600;
+}
+
+.lb-time {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-time small {
+  margin-left: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.lb-empty {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.lb-played {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.lb-chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pc) 14%, white);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 /* ---------- Game ---------- */
 
 .game {
@@ -891,6 +1101,17 @@ body.playing .float {
     padding-top: 12px;
   }
 
+  .player-btn {
+    flex-direction: row;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 4px;
+  }
+
+  .player-icon {
+    font-size: 1.4rem;
+  }
+
   .logo {
     font-size: 2.4rem;
   }
@@ -989,6 +1210,14 @@ body.playing .float {
 .win-stars span.off {
   filter: grayscale(1);
   opacity: 0.3;
+}
+
+.win-record {
+  margin: 4px 0 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #d98a00;
+  animation: pop 0.6s cubic-bezier(0.3, 1.6, 0.5, 1) 0.8s both;
 }
 
 .win-info {
