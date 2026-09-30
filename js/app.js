@@ -558,10 +558,10 @@
 
   // Candidate notes shrink as more of them are added: [columns, size factor].
   function noteLayout(count) {
-    if (count <= 1) return [1, 0.46];
-    if (count === 2) return [2, 0.38];
-    if (count <= 4) return [2, 0.33];
-    return [3, 0.28];
+    if (count <= 1) return [1, 0.3];
+    if (count === 2) return [2, 0.28];
+    if (count <= 4) return [2, 0.26];
+    return [3, 0.22];
   }
 
   function renderCell(i) {
