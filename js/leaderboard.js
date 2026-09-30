@@ -97,9 +97,10 @@
 
   /*
    * For every mode and level: number of games (total and per player, all
-   * games) and the fastest results without hints, best first.
+   * games) and the fastest results without hints, best first. With `player`
+   * only that player's results are listed (the counts stay for everyone).
    */
-  function stats(results, top = 3) {
+  function stats(results, top = 5, player = null) {
     const out = {};
     for (const mode of MODES) {
       out[mode] = {};
@@ -114,7 +115,7 @@
       const bucket = out[r.mode][r.level];
       bucket.count++;
       bucket.byPlayer[r.player]++;
-      if (!r.hints) bucket.best.push(r);
+      if (!r.hints && (!player || r.player === player)) bucket.best.push(r);
     }
     for (const mode of MODES) {
       for (const level of LEVELS) {

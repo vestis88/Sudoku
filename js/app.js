@@ -53,6 +53,7 @@
   const PLAYERS = Object.fromEntries(LB.PLAYERS.map((p) => [p.name, p]));
   if (!PLAYERS[prefs.player]) delete prefs.player;
   let lbMode = prefs.mode;
+  let lbPlayer = null; // show only this player's best times, or everyone's
 
   let game = null;
   let selected = -1;
@@ -510,25 +511,37 @@
           : status === 'synced'
             ? '☁️ Synkad'
             : '☁️';
-    const stats = LB.stats(results.results())[lbMode];
-    const medals = ['🥇', '🥈', '🥉'];
+    const stats = LB.stats(results.results(), 5, lbPlayer)[lbMode];
+    const medals = ['🥇', '🥈', '🥉', '4', '5'];
+    // Swedish genitive: "Bims", but "Frans" stays "Frans"
+    const whose = lbPlayer && (lbPlayer.endsWith('s') ? lbPlayer : lbPlayer + 's');
+    $('#lb-note').textContent = lbPlayer
+      ? `${avatarOf(lbPlayer)} ${whose} bästa tider utan ledtrådar · tryck igen för alla`
+      : 'Bästa tider utan ledtrådar 💡 · tryck på en figur för en spelares egna tider';
+    const dateFmt = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'short' });
     $('#lb-levels').innerHTML = LB.LEVELS.map((level) => {
       const s = stats[level];
       const lvl = LEVELS[level];
       const best = s.best.length
         ? `<ol class="lb-best">${s.best
             .map(
-              (r, k) => `<li class="${r.player === prefs.player ? 'me' : ''}" style="--pc:${PLAYERS[r.player].color}">
-                <span class="lb-medal">${medals[k]}</span>
-                <span class="lb-player">${playerLabel(r.player)}</span>
+              (r, k) => `<li class="${r.player === prefs.player && !lbPlayer ? 'me' : ''}" style="--pc:${PLAYERS[r.player].color}">
+                <span class="lb-medal${k > 2 ? ' lb-rank' : ''}">${medals[k]}</span>
+                ${
+                  lbPlayer
+                    ? `<span class="lb-player lb-date">${r.date ? dateFmt.format(new Date(r.date)) : ''}</span>`
+                    : `<button class="lb-player lb-who" data-player="${r.player}">${playerLabel(r.player)}</button>`
+                }
                 <span class="lb-time">${formatTime(r.timeMs)}</span>
               </li>`
             )
             .join('')}</ol>`
-        : '<p class="lb-empty">Ingen tid utan ledtrådar än – bli först! 🌟</p>';
+        : lbPlayer
+          ? `<p class="lb-empty">${lbPlayer} har ingen tid utan ledtrådar här än.</p>`
+          : '<p class="lb-empty">Ingen tid utan ledtrådar än – bli först! 🌟</p>';
       const played = LB.PLAYERS.map(
         (p) =>
-          `<span class="lb-chip" style="--pc:${p.color}" title="${p.name}: ${s.byPlayer[p.name]} spelade">${avatarOf(p.name)} ${s.byPlayer[p.name]}</span>`
+          `<button class="lb-chip" data-player="${p.name}" aria-pressed="${p.name === lbPlayer}" style="--pc:${p.color}" title="${p.name}: ${s.byPlayer[p.name]} spelade">${avatarOf(p.name)} ${s.byPlayer[p.name]}</button>`
       ).join('');
       return `<div class="lb-card">
         <div class="lb-card-head"><span class="lb-level">${lvl.icon} ${lvl.label}</span><span class="lb-count">${s.count} ${s.count === 1 ? 'spelad' : 'spelade'}</span></div>
@@ -1217,6 +1230,13 @@
       })
     );
     window.addEventListener('online', refreshLeaderboard);
+    // Tapping an avatar shows that player's top 5; tapping it again shows everyone's.
+    $('#lb-levels').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-player]');
+      if (!btn) return;
+      lbPlayer = lbPlayer === btn.dataset.player ? null : btn.dataset.player;
+      renderLeaderboard();
+    });
     $('#picker-close').addEventListener('click', closePicker);
     $('#btn-theme').addEventListener('click', openThemePicker);
     $('#theme-close').addEventListener('click', () => ($('#theme-picker').hidden = true));

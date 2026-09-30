@@ -33,8 +33,23 @@ test('stats counts all games but lists only the fastest games without hints', ()
   // Wille's 60000 used hints: counted as played, but not on the leaderboard.
   assert.deepEqual(
     easy.best.map((r) => r.timeMs),
-    [75000, 90000, 120000]
+    [75000, 90000, 120000, 200000]
   );
+  assert.deepEqual(
+    Leaderboard.stats(
+      [
+        result('Bim', 'mini', 'easy', 90000),
+        result('Bim', 'mini', 'easy', 75000),
+        result('Johan', 'mini', 'easy', 60000),
+      ],
+      5,
+      'Bim'
+    ).mini.easy.best.map((r) => r.timeMs),
+    [75000, 90000],
+    'player filter lists only that player'
+  );
+  const many = Array.from({ length: 8 }, (_, k) => result('Frans', 'mini', 'easy', 70000 + k * 1000));
+  assert.equal(Leaderboard.stats(many).mini.easy.best.length, 5, 'top 5');
   assert.equal(s.classic.hard.count, 1);
   assert.equal(s.mini.hard.count, 0);
   assert.deepEqual(s.mini.hard.best, []);
