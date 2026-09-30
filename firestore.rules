@@ -25,7 +25,7 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if name in ['Wille', 'Johan', 'Bim', 'Frans']
         && request.resource.data.keys().hasOnly(['icon'])
-        && request.resource.data.icon in ['🌈', '🦄', '🦖', '🚀', '🐙', '🐱', '🐶', '🦊', '🐼', '🐸', '🦁', '🐯', '🐵', '🐧', '🦋', '🐬', '🦈', '🐢', '🐲', '🤖', '👾', '👑', '🌟', '🍕', '🍦', '🍓', '🌸', '🌻', '🎸', '🏀'];
+        && request.resource.data.icon in ['🌈', '🦄', '🦖', '🚀', '🐙', '🐱', '🐶', '🦊', '🐼', '🐸', '🦁', '🐯', '🐵', '🐧', '🦋', '🐬', '🦈', '🐢', '🐲', '🤖', '👾', '👑', '🌟', '🍕', '🍦', '🍬', '🍭', '🍓', '🌸', '🌻', '🎸', '🏀'];
       allow delete: if false;
     }
   }
