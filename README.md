@@ -16,12 +16,16 @@ no build step, no dependencies, works offline and collects no data.
 * **Numbers used up**: each number button shows how many are left. When all of
   one number are on the board, its button turns gold with a ⭐, sparkles fly and
   the numbers on the board do a wave.
+* **Notes** (✏️ Anteckna): toggle between noting possible candidates and
+  entering answers. Notes are small, italic and shrink as more are added.
+  Entering an answer replaces the notes in that square and removes that number
+  from the notes in the same row, column and box.
 * Undo, erase, hints, confetti when you win, sounds (can be muted), and
   progress is saved automatically.
 * Each number has its own colour, and the layout adapts to phones, tablets
   and desktops in portrait and landscape.
 * Keyboard: arrows move, `1`–`9` enter, `Backspace`/`0` erase, `K` check
-  (Kolla), `L` hint (Ledtråd), `Ctrl+Z` undo.
+  (Kolla), `L` hint (Ledtråd), `N` toggle notes, `Ctrl+Z` undo.
 
 ## Play
 

@@ -47,6 +47,7 @@
   let checkTimer = null;
   let clockStart = Date.now();
   let warnedFull = false;
+  let noteMode = false;
 
   /* ---------------- Sound ---------------- */
 
@@ -76,6 +77,7 @@
     const seq = (notes, gap, dur) => notes.forEach((f, i) => tone(f, dur, 'triangle', i * gap));
     return {
       place: (v) => tone(scale[v - 1], 0.14),
+      note: (v) => tone(scale[v - 1] * 2, 0.07, 'sine', 0, 0.08),
       erase: () => tone(330, 0.08, 'sine'),
       nope: () => tone(180, 0.14, 'square', 0, 0.05),
       good: () => seq([784, 1047, 1319], 0.08, 0.16),
@@ -279,6 +281,7 @@
       puzzle: g.puzzle,
       solution: g.solution,
       values: g.puzzle.slice(),
+      notes: new Array(g.puzzle.length).fill(0), // candidate bitmask per cell
       hinted: [],
       history: [],
       hints: 0,
@@ -295,6 +298,8 @@
     selected = -1;
     warnedFull = false;
     clockStart = Date.now();
+    if (!game.notes) game.notes = new Array(game.values.length).fill(0);
+    setNoteMode(false, true);
     $('#home').hidden = true;
     $('#win').hidden = true;
     $('#game').hidden = false;
@@ -367,18 +372,54 @@
 
   /* ---------------- Rendering ---------------- */
 
+  function noteDigits(mask) {
+    const out = [];
+    for (let d = 1; d <= 9; d++) if (mask & (1 << d)) out.push(d);
+    return out;
+  }
+
+  // Candidate notes shrink as more of them are added: [columns, size factor].
+  function noteLayout(count) {
+    if (count <= 1) return [1, 0.46];
+    if (count === 2) return [2, 0.38];
+    if (count <= 4) return [2, 0.33];
+    return [3, 0.28];
+  }
+
   function renderCell(i) {
     const el = cellEls[i];
     const val = game.values[i];
+    const notes = val ? [] : noteDigits(game.notes[i]);
     const g = S.geometry(variant());
     el.textContent = val || '';
+    if (notes.length) {
+      const [cols, factor] = noteLayout(notes.length);
+      const wrap = document.createElement('span');
+      wrap.className = 'notes';
+      wrap.style.setProperty('--cols', cols);
+      wrap.style.setProperty('--nf', factor);
+      for (const d of notes) {
+        const n = document.createElement('span');
+        n.className = 'note';
+        n.dataset.d = d;
+        n.style.setProperty('--dc', `var(--d${d})`);
+        n.textContent = d;
+        wrap.appendChild(n);
+      }
+      el.appendChild(wrap);
+    }
     el.style.setProperty('--dc', val ? `var(--d${val})` : 'var(--ink)');
     el.classList.toggle('given', !!game.puzzle[i]);
     el.classList.toggle('hinted', game.hinted.includes(i));
+    const content = val ? val : notes.length ? `anteckningar ${notes.join(', ')}` : 'tom';
     el.setAttribute(
       'aria-label',
-      `Rad ${g.rowOf[i] + 1}, kolumn ${g.colOf[i] + 1}, ${val ? val : 'tom'}${game.puzzle[i] ? ', låst' : ''}`
+      `Rad ${g.rowOf[i] + 1}, kolumn ${g.colOf[i] + 1}, ${content}${game.puzzle[i] ? ', låst' : ''}`
     );
+  }
+
+  function renderAllCells() {
+    for (let i = 0; i < cellEls.length; i++) renderCell(i);
   }
 
   function renderHighlights() {
@@ -393,6 +434,9 @@
       el.classList.toggle('selected', i === selected);
       el.classList.toggle('related', related);
       el.classList.toggle('same', !!selVal && i !== selected && game.values[i] === selVal);
+      if (game.notes[i]) {
+        el.querySelectorAll('.note').forEach((n) => n.classList.toggle('hl', Number(n.dataset.d) === selVal));
+      }
     }
   }
 
@@ -456,6 +500,10 @@
       toast('Den siffran är låst 🔒');
       return;
     }
+    if (noteMode) {
+      toggleNote(selected, d);
+      return;
+    }
     if (game.values[selected] === d) {
       setValue(selected, 0); // tapping the same number again removes it
       return;
@@ -469,15 +517,65 @@
     setValue(selected, d);
   }
 
+  // Snapshot taken before every move so undo can restore values and notes.
+  function pushHistory(i) {
+    game.history.push({ i, prev: game.values[i], notes: game.notes.slice() });
+    if (game.history.length > 500) game.history.shift();
+  }
+
+  function toggleNote(i, d) {
+    if (game.values[i]) {
+      Sound.nope();
+      replayAnimation(cellEls[i], 'wiggle');
+      toast('Rutan har redan en siffra – sudda den först');
+      return;
+    }
+    if (doneDigits.has(d)) {
+      Sound.nope();
+      replayAnimation(padEls[d], 'wiggle');
+      toast(`Alla ${DIGIT_NAMES[d]} är redan använda!`);
+      return;
+    }
+    pushHistory(i);
+    game.notes[i] ^= 1 << d;
+    renderCell(i);
+    Sound.note(d);
+    renderHighlights();
+    saveGame();
+  }
+
+  function setNoteMode(on, quiet) {
+    noteMode = on;
+    const btn = $('#btn-notes');
+    btn.classList.toggle('on', on);
+    btn.setAttribute('aria-pressed', String(on));
+    $('#pad').classList.toggle('notes-mode', on);
+    if (quiet) return;
+    replayAnimation(btn, 'pop');
+    toast(on ? 'Anteckna ✏️ – skriv små kandidater' : 'Svar 🖊️ – skriv in siffror');
+  }
+
   function setValue(i, v, opts) {
     const o = Object.assign({ record: true, hint: false }, opts);
     const prev = game.values[i];
     if (prev === v) return;
-    if (o.record) game.history.push({ i, prev });
+    if (o.record) pushHistory(i);
     game.values[i] = v;
     game.hinted = game.hinted.filter((h) => h !== i);
     if (o.hint) game.hinted.push(i);
     cellEls[i].classList.remove('correct', 'wrong');
+    if (v) {
+      // A locked-in answer replaces the cell's notes and removes that
+      // number from the notes of its row, column and box.
+      game.notes[i] = 0;
+      const bit = 1 << v;
+      for (const p of S.geometry(variant()).peers[i]) {
+        if (game.notes[p] & bit) {
+          game.notes[p] &= ~bit;
+          renderCell(p);
+        }
+      }
+    }
     renderCell(i);
     if (v) {
       replayAnimation(cellEls[i], 'pop');
@@ -516,7 +614,15 @@
       replayAnimation(cellEls[selected], 'wiggle');
       return;
     }
-    if (game.values[selected]) setValue(selected, 0);
+    if (game.values[selected]) {
+      setValue(selected, 0);
+    } else if (game.notes[selected]) {
+      pushHistory(selected);
+      game.notes[selected] = 0;
+      renderCell(selected);
+      Sound.erase();
+      saveGame();
+    }
   }
 
   function undo() {
@@ -527,7 +633,17 @@
       return;
     }
     selected = last.i;
-    setValue(last.i, last.prev, { record: false });
+    game.values[last.i] = last.prev;
+    if (last.notes) game.notes = last.notes;
+    game.hinted = game.hinted.filter((h) => h !== last.i);
+    cellEls[last.i].classList.remove('correct', 'wrong');
+    renderAllCells();
+    if (last.prev) replayAnimation(cellEls[last.i], 'pop');
+    Sound.erase();
+    renderHighlights();
+    updatePad(true);
+    saveGame();
+    afterMove();
   }
 
   function clearChecks() {
@@ -648,6 +764,8 @@
       check();
     } else if (key.toLowerCase() === 'l' || key.toLowerCase() === 'h') {
       hint();
+    } else if (key.toLowerCase() === 'n' || key.toLowerCase() === 'a') {
+      setNoteMode(!noteMode);
     } else if (key === 'Escape') {
       selected = -1;
       renderHighlights();
@@ -693,6 +811,7 @@
     $('#btn-undo').addEventListener('click', undo);
     $('#btn-erase').addEventListener('click', erase);
     $('#btn-hint').addEventListener('click', hint);
+    $('#btn-notes').addEventListener('click', () => setNoteMode(!noteMode));
     $('#btn-check').addEventListener('click', check);
     $('#btn-again').addEventListener('click', () => newGame(game.mode, game.level));
     $('#btn-win-home').addEventListener('click', showHome);

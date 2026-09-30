@@ -361,8 +361,8 @@ body.playing .float {
   display: flex;
   flex-direction: column;
   /* Space around the board used by header, number pad and actions */
-  --chrome: 300px;
-  --board-size: min(calc(100vw - 24px), calc(100dvh - var(--chrome)), 620px);
+  --chrome: 250px;
+  --board-size: min(calc(100vw - 12px), calc(100dvh - var(--chrome)), 640px);
 }
 
 .topbar {
@@ -418,8 +418,8 @@ body.playing .float {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 4px 12px max(14px, env(safe-area-inset-bottom));
+  gap: 10px;
+  padding: 2px 6px max(12px, env(safe-area-inset-bottom));
 }
 
 .board-wrap {
@@ -434,9 +434,9 @@ body.playing .float {
   display: grid;
   grid-template-columns: repeat(var(--boxes-across), 1fr);
   grid-template-rows: repeat(var(--boxes-down), 1fr);
-  gap: 1.5%;
-  padding: 1.8%;
-  border-radius: 24px;
+  gap: 1.1%;
+  padding: 1.2%;
+  border-radius: 18px;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   box-shadow: var(--shadow);
 }
@@ -445,11 +445,11 @@ body.playing .float {
   display: grid;
   grid-template-columns: repeat(var(--box-cols), 1fr);
   grid-template-rows: repeat(var(--box-rows), 1fr);
-  gap: 3px;
-  padding: 3px;
+  gap: 2px;
+  padding: 2px;
   min-width: 0;
   min-height: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.4);
 }
 
@@ -506,6 +506,33 @@ body.playing .float {
   top: 1px;
   right: 2px;
   font-size: 32%;
+}
+
+/* Candidate notes: small italic numbers that shrink as more are added */
+.notes {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  place-items: center;
+  align-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 6%;
+  font-size: calc(100cqi / var(--n) * var(--nf));
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+.note {
+  min-width: 1.1em;
+  border-radius: 40%;
+  color: var(--dc);
+  text-align: center;
+}
+
+.note.hl {
+  background: color-mix(in srgb, var(--dc) 25%, white);
+  box-shadow: 0 0 0 1px var(--dc);
 }
 
 /* Check feedback */
@@ -690,8 +717,36 @@ body.playing .float {
   gap: 8px;
 }
 
+/* Notes toggle and the number pad while taking notes */
+.tool.toggle.on {
+  background: linear-gradient(160deg, #a58bff, var(--accent));
+  box-shadow: 0 6px 0 #6446d6, 0 10px 20px rgba(143, 107, 255, 0.35);
+}
+
+.tool.toggle.on .tool-label {
+  color: #fff;
+  font-weight: 600;
+}
+
+.pad.notes-mode .pad-btn:not(.done) {
+  background: #fff;
+  color: var(--dc);
+  font-style: italic;
+  box-shadow: inset 0 0 0 3px var(--dc), 0 5px 0 color-mix(in srgb, var(--dc) 55%, white);
+}
+
+.pad.notes-mode .pad-btn:not(.done)::before {
+  content: '✏️';
+  position: absolute;
+  bottom: 3px;
+  left: 4px;
+  font-size: 0.55rem;
+  font-style: normal;
+}
+
 .tool {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -717,13 +772,13 @@ body.playing .float {
 }
 
 .tool-label {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: var(--muted);
   font-weight: 500;
 }
 
 .check-btn {
-  flex: 1.7;
+  flex: 1.5;
   min-height: 60px;
   border: none;
   border-radius: 18px;
@@ -789,7 +844,7 @@ body.playing .float {
   }
 
   .game {
-    --chrome: 270px;
+    --chrome: 230px;
   }
 }
 
