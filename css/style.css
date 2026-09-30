@@ -145,7 +145,7 @@ button:focus-visible {
   flex-direction: column;
   align-items: center;
   gap: 14px;
-  padding: max(24px, env(safe-area-inset-top)) 16px 32px;
+  padding: max(40px, calc(env(safe-area-inset-top) + 24px)) 16px 32px;
   overflow-y: auto;
   text-align: center;
 }
@@ -770,6 +770,12 @@ button:focus-visible {
 .game {
   display: flex;
   flex-direction: column;
+  /* Header, board and controls stay together as one centred group, with the
+     spare height split above and below. The top padding keeps the header
+     clear of the browser's blurred top edge. */
+  justify-content: center;
+  padding-top: max(28px, calc(env(safe-area-inset-top) + 16px));
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
   /* Space around the board used by header, number pad and actions */
   --chrome: 300px;
   --board-size: min(calc(100vw - 12px), calc(100dvh - var(--chrome)), 640px);
@@ -780,7 +786,9 @@ button:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: max(10px, env(safe-area-inset-top)) 16px 6px;
+  width: var(--board-size);
+  margin: 0 auto;
+  padding: 0 0 12px;
 }
 
 .round-btn {
@@ -848,14 +856,14 @@ button:focus-visible {
 }
 
 .play-area {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 2px 6px max(12px, env(safe-area-inset-bottom));
+  padding: 0 6px;
 }
 
 .board-wrap {
@@ -1260,7 +1268,14 @@ button:focus-visible {
 @media (min-aspect-ratio: 6/5) {
   .game {
     --controls: min(440px, 40vw);
-    --board-size: min(calc(100dvh - 92px), calc(100vw - var(--controls) - 60px), 700px);
+    --board-size: min(calc(100dvh - 96px), calc(100vw - var(--controls) - 60px), 700px);
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+
+  .topbar {
+    width: calc(var(--board-size) + var(--controls) + 28px);
+    max-width: calc(100vw - 24px);
+    padding-bottom: 8px;
   }
 
   .play-area {
@@ -1306,6 +1321,28 @@ button:focus-visible {
 
   .check-btn {
     flex-basis: 100%;
+  }
+}
+
+/* Tall phones in portrait: use spare height for bigger buttons */
+@media (max-aspect-ratio: 6/5) and (min-height: 760px) {
+  .pad-btn {
+    aspect-ratio: 1 / 1.4;
+    max-height: 84px;
+  }
+
+  .note-btn {
+    aspect-ratio: 1 / 1.05;
+    max-height: 60px;
+  }
+
+  .tool,
+  .check-btn {
+    min-height: 66px;
+  }
+
+  .controls {
+    gap: 14px;
   }
 }
 
