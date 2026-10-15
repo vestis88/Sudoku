@@ -25,7 +25,10 @@
    */
   const LEVELS = {
     easy: { width: 9, height: 9, logic: 1, harder: 0, clues: 0.4 },
-    medium: { width: 9, height: 9, logic: 2, harder: 1, clues: 0 },
+    // Mellan keeps about 27 % clues (~22), so it needs only one or two
+    // advanced steps; removing as many clues as possible made it nearly as
+    // sparse as Svår.
+    medium: { width: 9, height: 9, logic: 2, harder: 1, clues: 0.27 },
     hard: { width: 9, height: 9, logic: 3, harder: 2, clues: 0 },
   };
 
@@ -357,7 +360,8 @@
    *     one of them leads to a contradiction with tier 2, it is the other.
    * Mutates grid and banned; returns 'solved', 'stuck' or 'contradiction'.
    */
-  function runLogic(grid, banned, geo, level) {
+  function runLogic(grid, banned, geo, level, stats) {
+    const used = (name) => stats && (stats[name] = (stats[name] || 0) + 1);
     const full = (i) => (1 << (geo.sizeOf[i] + 1)) - 2;
     for (;;) {
       let empty = 0;
@@ -383,7 +387,10 @@
       // recomputed after each placement.
       let progress = false;
       for (let i = 0; i < geo.cells && !progress; i++) if (!grid[i] && bitCount(c[i]) === 1) progress = place(i, lowestDigit(c[i]));
-      if (progress) continue;
+      if (progress) {
+        used('nakedSingle');
+        continue;
+      }
 
       // Tier 1: hidden singles (and a region that has lost a number is broken)
       for (const unit of geo.units) {
@@ -399,7 +406,10 @@
         }
         if (progress) break;
       }
-      if (progress) continue;
+      if (progress) {
+        used('hiddenSingle');
+        continue;
+      }
       if (level < 2) return 'stuck';
 
       // Tier 2: forbidden neighbour
@@ -413,7 +423,10 @@
           }
         }
       });
-      if (progress) continue;
+      if (progress) {
+        used('forbiddenNeighbour');
+        continue;
+      }
 
       // Tier 2: naked pairs (also clears cells touching both)
       for (const unit of geo.units) {
@@ -428,7 +441,10 @@
           }
         }
       }
-      if (progress) continue;
+      if (progress) {
+        used('nakedPair');
+        continue;
+      }
 
       // Tier 2: hidden pairs (two numbers that fit only in the same two cells)
       for (const unit of geo.units) {
@@ -447,7 +463,10 @@
           }
         }
       }
-      if (progress) continue;
+      if (progress) {
+        used('hiddenPair');
+        continue;
+      }
       if (level < 3) return 'stuck';
 
       // Tier 3: naked triples in a region
@@ -462,7 +481,10 @@
               for (const x of unit) if (!trio.includes(x)) progress = ban(x, mask) || progress;
             }
       }
-      if (progress) continue;
+      if (progress) {
+        used('nakedTriple');
+        continue;
+      }
 
       // Tier 3: "what if" on two-candidate cells
       for (let i = 0; i < geo.cells && !progress; i++) {
@@ -478,6 +500,7 @@
         }
       }
       if (!progress) return 'stuck';
+      used('whatIf');
     }
   }
 
@@ -486,18 +509,31 @@
     return runLogic(puzzle.slice(), new Array(geo.cells).fill(0), geo, level) === 'solved';
   }
 
+  // How a player would solve it: which techniques, how many times.
+  function analyze(puzzle, geo, level = 3) {
+    const uses = {};
+    const solved = runLogic(puzzle.slice(), new Array(geo.cells).fill(0), geo, level, uses) === 'solved';
+    const advanced = (uses.forbiddenNeighbour || 0) + (uses.nakedPair || 0) + (uses.hiddenPair || 0);
+    const expert = (uses.nakedTriple || 0) + (uses.whatIf || 0);
+    return { solved, uses, advanced, expert, clues: puzzle.filter(Boolean).length };
+  }
+
   /* ---------- Puzzle generation ---------- */
 
+  /*
+   * Removes clues in random order while the puzzle stays solvable with the
+   * level's techniques. Stops at the clue floor once the puzzle also needs
+   * those techniques (is too hard for the level below).
+   */
   function digClues(solution, geo, settings, rand) {
     const puzzle = solution.slice();
     const target = Math.round(geo.cells * settings.clues);
     let clues = geo.cells;
     for (const i of shuffle([...Array(geo.cells).keys()], rand)) {
-      if (clues <= target) break;
+      if (clues <= target && !(settings.harder && solveLogic(puzzle, geo, settings.harder))) break;
       const keep = puzzle[i];
       puzzle[i] = 0;
-      const ok = solveLogic(puzzle, geo, settings.logic);
-      if (ok) clues--;
+      if (solveLogic(puzzle, geo, settings.logic)) clues--;
       else puzzle[i] = keep;
     }
     return puzzle;
@@ -545,7 +581,7 @@
     return true;
   }
 
-  const api = { LEVELS, MAX_REGION, geometry, generate, solve, countSolutions, solveLogic, isValidSolution };
+  const api = { LEVELS, MAX_REGION, geometry, generate, solve, countSolutions, solveLogic, analyze, isValidSolution };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Tectonic = api;

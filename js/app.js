@@ -131,7 +131,9 @@
 
   /* ---------------- Tectonic puzzles in the background ---------------- */
 
-  const TEC_READY_KEY = 'sudoku-fun-tectonic-ready-v1'; // one ready puzzle per level
+  // One ready puzzle per level. Bump the version when the levels change so
+  // puzzles built with the old settings are not used.
+  const TEC_READY_KEY = 'sudoku-fun-tectonic-ready-v2';
   let tecWorker = null;
   let tecSeq = 0;
   const tecWaiting = new Map();

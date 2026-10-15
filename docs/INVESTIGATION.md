@@ -228,8 +228,22 @@ The app therefore always uses a **9 × 9** board and grades by technique tier:
 | Level | Needs | Guarantee | Clues (typical) |
 | ----- | ----- | --------- | --------------- |
 | Lätt | tier 1 | solvable with singles | 32 (40 %) |
-| Mellan | tier 2 | **not** solvable with singles alone | 5–16 |
-| Svår | tier 3 | **not** solvable with tier 2 | 7–14 |
+| Mellan | tier 2 | **not** solvable with singles alone | ~22 (27 %) |
+| Svår | tier 3 | **not** solvable with tier 2 | 4–14 |
+
+Mellan was first dug down to as few clues as possible (median 11), which
+made it almost as sparse as Svår: players went from 32 clues and only
+"obvious" cells to 11 clues, about 11 hidden singles and up to 8 advanced
+steps at once. Measured on 30 puzzles each:
+
+| Mellan recipe | Clues (min/median/max) | Advanced steps | Hidden singles |
+| ------------- | ---------------------- | -------------- | -------------- |
+| As few clues as possible | 7 / 11 / 16 | 1 / 3 / 8 | 6 / 11 / 22 |
+| Keep 27 % clues (chosen) | 14 / 22 / 22 | 1 / 1 / 3 | 0 / 5 / 12 |
+
+With the 27 % floor the generator stops removing clues once it reaches 22
+clues **and** the puzzle needs a Mellan technique, so it is still never a
+Lätt puzzle, but usually needs just one advanced step.
 
 Generated puzzles that turn out too easy for their level are rejected and a
 new board is built. In 40 puzzles per level all were unique, solvable with

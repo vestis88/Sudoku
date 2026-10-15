@@ -101,3 +101,15 @@ test('levels need increasingly advanced techniques', () => {
   assert.ok(T.solveLogic(easy.puzzle, ge, 1));
   assert.ok(!T.solveLogic(hard.puzzle, gh, 2) && T.solveLogic(hard.puzzle, gh, 3));
 });
+
+test('Mellan sits between Lätt and Svår: more clues than Svår, only a few advanced steps', () => {
+  for (let seed = 1; seed <= 6; seed++) {
+    const m = T.generate('medium', seed);
+    const h = T.generate('hard', seed);
+    const am = T.analyze(m.puzzle, T.geometry(9, 9, m.regions), 2);
+    const ah = T.analyze(h.puzzle, T.geometry(9, 9, h.regions), 3);
+    assert.ok(am.solved && am.advanced >= 1, 'needs at least one Mellan technique');
+    assert.ok(am.advanced <= 4, `only a few advanced steps (${am.advanced})`);
+    assert.ok(am.clues > ah.clues, `more clues than Svår (${am.clues} vs ${ah.clues})`);
+  }
+});
