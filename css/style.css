@@ -1055,7 +1055,7 @@ button:focus-visible {
    digit thickens it in any font, also where the digits are already the
    font's boldest weight. */
 .cell.same {
-  -webkit-text-stroke: 0.07em currentColor;
+  -webkit-text-stroke: 0.035em currentColor;
   paint-order: stroke fill;
 }
 
@@ -1205,7 +1205,7 @@ button:focus-visible {
 
 .note.hl {
   font-weight: 700;
-  -webkit-text-stroke: 0.08em currentColor;
+  -webkit-text-stroke: 0.05em currentColor;
   paint-order: stroke fill;
 }
 
