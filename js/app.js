@@ -1009,6 +1009,7 @@
     pad.innerHTML = '';
     pad.style.setProperty('--n', digits);
     pad.style.setProperty('--pad-rows', Math.ceil(digits / 3));
+    $('.pads').style.setProperty('--cols-n', digits);
     const notePad = $('#notes-pad');
     notePad.innerHTML = '';
     notePad.style.setProperty('--n', digits);
@@ -1129,10 +1130,6 @@
   }
 
   function celebrateDigit(d) {
-    if (stamp && !stamp.note && stamp.d === d) {
-      stamp = null;
-      renderStamp();
-    }
     Sound.done();
     replayAnimation(padEls[d], 'just-done');
     burst(padEls[d], 10);
@@ -1169,8 +1166,7 @@
 
   function chooseStamp(d, note) {
     stamp = stamp && stamp.d === d && stamp.note === note ? null : { d, note };
-    renderStamp();
-    if (stamp) toast(`Stämpel: ${note ? 'anteckning ' : ''}${d} – tryck på rutor`);
+    renderStamp(); // the ring on the pad shows the stamp; no message needed
   }
 
   function renderStamp() {

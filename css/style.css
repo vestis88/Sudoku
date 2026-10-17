@@ -1312,8 +1312,8 @@ button:focus-visible {
 .pad-btn {
   --dc: var(--ink);
   position: relative;
-  aspect-ratio: 1 / 1.15;
-  max-height: 76px;
+  width: 100%;
+  height: min(76px, calc(var(--col) * 1.15));
   min-width: 0;
   padding: 0;
   border: none;
@@ -1384,8 +1384,11 @@ button:focus-visible {
 }
 
 .actions {
-  display: flex;
-  gap: 8px;
+  /* Five equal columns with the same spacing as the number rows above, so
+     the buttons line up with them (exactly so in Tectonic's five columns) */
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
 }
 
 /* Stamp (Stämpla): the toggle and the chosen number */
@@ -1414,13 +1417,16 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  container-type: inline-size;
+  /* width of one button column (n columns, 6px gaps) */
+  --col: calc((100cqi - (var(--cols-n, 9) - 1) * 6px) / var(--cols-n, 9));
 }
 
 .note-btn {
   --dc: var(--ink);
   position: relative;
-  aspect-ratio: 1 / 0.8;
-  max-height: 52px;
+  width: 100%;
+  height: min(52px, calc(var(--col) * 0.8));
   min-width: 0;
   padding: 0;
   border: none;
@@ -1497,26 +1503,36 @@ button:focus-visible {
 }
 
 .check-btn {
-  flex: 1.5;
+  min-width: 0;
   min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 4px;
   border: none;
   border-radius: 18px;
   background: var(--check-bg);
   color: #fff;
-  font-size: 1.35rem;
-  font-weight: 700;
   box-shadow: var(--check-shadow);
   transition: transform 0.1s;
+}
+
+.check-label {
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .check-icon {
   display: inline-grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  margin-right: 4px;
+  width: 1.6rem;
+  height: 1.6rem;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.28);
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 /* Landscape: board on the left, controls on the right */
@@ -1570,25 +1586,31 @@ button:focus-visible {
     font-size: clamp(1rem, 3.6dvh, 1.6rem);
   }
 
+  /* Landscape: four tools in a row, a wide Kolla below them */
   .actions {
-    flex-wrap: wrap;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
   }
 
   .check-btn {
-    flex-basis: 100%;
+    grid-column: 1 / -1;
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .check-label {
+    font-size: 1.35rem;
   }
 }
 
 /* Tall phones in portrait: use spare height for bigger buttons */
 @media (max-aspect-ratio: 6/5) and (min-height: 760px) {
   .pad-btn {
-    aspect-ratio: 1 / 1.4;
-    max-height: 84px;
+    height: min(84px, calc(var(--col) * 1.4));
   }
 
   .note-btn {
-    aspect-ratio: 1 / 1.05;
-    max-height: 60px;
+    height: min(60px, calc(var(--col) * 1.05));
   }
 
   .tool,
