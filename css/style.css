@@ -1029,7 +1029,7 @@ button:focus-visible {
   border-radius: 22%;
   background: var(--cell);
   color: var(--entry, var(--dc));
-  font-weight: 700;
+  font-weight: 500;
   font-size: calc(100cqi / var(--n) * 0.56);
   line-height: 1;
   display: grid;
@@ -1038,6 +1038,7 @@ button:focus-visible {
 }
 
 .cell.given {
+  font-weight: 600;
   background: color-mix(in srgb, var(--dc) 20%, var(--cell));
   color: color-mix(in srgb, var(--dc) 82%, black);
   cursor: default;
@@ -1051,12 +1052,10 @@ button:focus-visible {
   background: color-mix(in srgb, var(--dc) 26%, var(--related));
 }
 
-/* Numbers equal to the selected one are drawn bolder. A stroke around the
-   digit thickens it in any font, also where the digits are already the
-   font's boldest weight. */
+/* Numbers are medium weight; the ones equal to the selected number (or the
+   stamp) are bold. */
 .cell.same {
-  -webkit-text-stroke: 0.035em currentColor;
-  paint-order: stroke fill;
+  font-weight: 700;
 }
 
 .cell.selected {
@@ -1192,7 +1191,7 @@ button:focus-visible {
   padding: 8%;
   font-size: calc(100cqi / var(--n) * var(--nf));
   font-style: italic;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.05;
 }
 
@@ -1205,8 +1204,6 @@ button:focus-visible {
 
 .note.hl {
   font-weight: 700;
-  -webkit-text-stroke: 0.05em currentColor;
-  paint-order: stroke fill;
 }
 
 /* Check feedback */
@@ -1389,6 +1386,27 @@ button:focus-visible {
 .actions {
   display: flex;
   gap: 8px;
+}
+
+/* Stamp (Stämpla): the toggle and the chosen number */
+.tool.toggle.on {
+  background: var(--grad);
+  box-shadow: 0 0 0 3px var(--sel-ring), var(--shadow);
+}
+
+.tool.toggle.on .tool-label {
+  color: #fff;
+  font-weight: 600;
+}
+
+.pad-btn.stamped,
+.note-btn.stamped {
+  transform: translateY(-4px);
+  box-shadow: 0 0 0 3px var(--sel-ring), 0 6px 14px color-mix(in srgb, var(--sel-ring) 55%, transparent);
+}
+
+.board.stamping {
+  box-shadow: 0 0 0 3px var(--sel-ring), var(--shadow);
 }
 
 /* Second row of buttons for candidate notes: small, outlined and italic */

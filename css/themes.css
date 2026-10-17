@@ -194,7 +194,6 @@
 [data-theme='elegant'] .cell.same,
 [data-theme='plain'] .cell.same {
   font-weight: 700;
-  -webkit-text-stroke: 0.07em currentColor;
 }
 
 [data-theme='elegant'] .pad-btn,
@@ -394,4 +393,13 @@
 [data-theme='elegant'] .tgrid,
 [data-theme='plain'] .tgrid {
   border-radius: 4px;
+}
+
+/* Stamp: show the chosen number in the grown-up themes too */
+[data-theme='elegant'] .pad-btn.stamped,
+[data-theme='plain'] .pad-btn.stamped,
+[data-theme='elegant'] .note-btn.stamped,
+[data-theme='plain'] .note-btn.stamped {
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 3px var(--sel-ring);
 }

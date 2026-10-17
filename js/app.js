@@ -67,6 +67,8 @@
   let clockTimer = null;
   let clockStart = Date.now();
   let warnedFull = false;
+  let stampMode = false;
+  let stamp = null; // { d, note } while stamping
 
   /* ---------------- Sound ---------------- */
 
@@ -850,6 +852,8 @@
   function startGame() {
     selected = -1;
     warnedFull = false;
+    stampMode = false;
+    stamp = null;
     clockStart = Date.now();
     if (!game.notes) game.notes = new Array(game.values.length).fill(0);
     $('#home').hidden = true;
@@ -863,6 +867,7 @@
     if (game.mode === 'tectonic' && !game.history.length) toast('Tips: lika siffror får inte nudda varandra – inte ens snett! 👀');
     buildBoard();
     buildPad();
+    renderStamp();
     doneDigits = new Set();
     updatePad(false);
     saveGame();
@@ -877,7 +882,9 @@
       e.preventDefault();
       select(i);
     });
-    cell.addEventListener('click', () => select(i)); // keyboard activation
+    // Keyboard activation only (detail 0): a tap already selected the cell on
+    // pointerdown, and selecting twice would undo a stamp right away.
+    cell.addEventListener('click', (e) => e.detail === 0 && select(i));
     return cell;
   }
 
@@ -1082,13 +1089,13 @@
 
   function renderHighlights() {
     const peers = selected >= 0 ? geo().highlightSets[selected] : null;
-    const selVal = selected >= 0 ? game.values[selected] : 0;
+    const selVal = stamp ? stamp.d : selected >= 0 ? game.values[selected] : 0;
     for (let i = 0; i < cellEls.length; i++) {
       const el = cellEls[i];
       const related = !!peers && peers.has(i);
       el.classList.toggle('selected', i === selected);
       el.classList.toggle('related', related);
-      el.classList.toggle('same', !!selVal && i !== selected && game.values[i] === selVal);
+      el.classList.toggle('same', !!selVal && (i !== selected || !!stamp) && game.values[i] === selVal);
       if (game.notes[i]) {
         el.querySelectorAll('.note').forEach((n) => n.classList.toggle('hl', Number(n.dataset.d) === selVal));
       }
@@ -1122,6 +1129,10 @@
   }
 
   function celebrateDigit(d) {
+    if (stamp && !stamp.note && stamp.d === d) {
+      stamp = null;
+      renderStamp();
+    }
     Sound.done();
     replayAnimation(padEls[d], 'just-done');
     burst(padEls[d], 10);
@@ -1140,6 +1151,36 @@
     if (!game || game.done) return;
     selected = i;
     renderHighlights();
+    if (stampMode && stamp) {
+      if (stamp.note) placeNote(stamp.d);
+      else placeAnswer(stamp.d);
+    }
+  }
+
+  /* ---------------- Stamp (Stämpla) ---------------- */
+
+  // While stamping, the pads choose the stamp and tapping a cell writes it.
+  function setStampMode(on) {
+    stampMode = on;
+    stamp = null;
+    renderStamp();
+    if (on) toast('Stämpla 📌 – välj en siffra, tryck sedan på rutor');
+  }
+
+  function chooseStamp(d, note) {
+    stamp = stamp && stamp.d === d && stamp.note === note ? null : { d, note };
+    renderStamp();
+    if (stamp) toast(`Stämpel: ${note ? 'anteckning ' : ''}${d} – tryck på rutor`);
+  }
+
+  function renderStamp() {
+    const btn = $('#btn-stamp');
+    btn.classList.toggle('on', stampMode);
+    btn.setAttribute('aria-pressed', String(stampMode));
+    $('#board').classList.toggle('stamping', !!stamp);
+    Object.entries(padEls).forEach(([d, el]) => el.classList.toggle('stamped', !!stamp && !stamp.note && stamp.d === +d));
+    Object.entries(noteEls).forEach(([d, el]) => el.classList.toggle('stamped', !!stamp && stamp.note && stamp.d === +d));
+    if (game) renderHighlights();
   }
 
   // True when the selected cell can be changed; otherwise explains why not.
@@ -1161,10 +1202,20 @@
   }
 
   function enterNote(d) {
-    if (canEditSelected()) toggleNote(selected, d);
+    if (stampMode) chooseStamp(d, true);
+    else placeNote(d);
   }
 
   function enter(d) {
+    if (stampMode) chooseStamp(d, false);
+    else placeAnswer(d);
+  }
+
+  function placeNote(d) {
+    if (canEditSelected()) toggleNote(selected, d);
+  }
+
+  function placeAnswer(d) {
     if (!canEditSelected()) return;
     if (game.values[selected] === d) {
       setValue(selected, 0); // tapping the same number again removes it
@@ -1628,6 +1679,7 @@
     $('#btn-undo').addEventListener('click', undo);
     $('#btn-erase').addEventListener('click', erase);
     $('#btn-hint').addEventListener('click', hint);
+    $('#btn-stamp').addEventListener('click', () => setStampMode(!stampMode));
     $('#btn-check').addEventListener('click', check);
     $('#btn-again').addEventListener('click', () => newGame(game.mode, game.level, game.player || prefs.player));
     $('#btn-win-home').addEventListener('click', showHome);

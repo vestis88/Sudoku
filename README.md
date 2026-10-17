@@ -35,6 +35,9 @@ no build step, no dependencies, works offline and collects no data.
 * **Timer and records**: a clock runs during the game next to the player's
   best time (🏅). Beating your own best (or everyone's) triggers a big
   "NYTT REKORD!" celebration with confetti cannons and a fanfare.
+* **Stämpla (stamp)**: turn on 📌, pick a number on the answer or note row,
+  then every square you tap gets that number (tap again to remove it).
+  Numbers equal to the selection or the stamp are shown in bold.
 * **Pause and resume**: every unfinished game is saved on the device.
   *Fortsätt* jumps back into the latest one, and *📂 Sparade spel* lists all
   of them (who, board, time, progress) to continue or remove.
