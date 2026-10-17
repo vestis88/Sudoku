@@ -1051,8 +1051,12 @@ button:focus-visible {
   background: color-mix(in srgb, var(--dc) 26%, var(--related));
 }
 
+/* Numbers equal to the selected one are drawn bolder. A stroke around the
+   digit thickens it in any font, also where the digits are already the
+   font's boldest weight. */
 .cell.same {
-  box-shadow: inset 0 0 0 3px var(--dc);
+  -webkit-text-stroke: 0.07em currentColor;
+  paint-order: stroke fill;
 }
 
 .cell.selected {
@@ -1200,8 +1204,9 @@ button:focus-visible {
 }
 
 .note.hl {
-  background: color-mix(in srgb, var(--dc) 25%, var(--cell));
-  box-shadow: 0 0 0 1px var(--dc);
+  font-weight: 700;
+  -webkit-text-stroke: 0.08em currentColor;
+  paint-order: stroke fill;
 }
 
 /* Check feedback */
