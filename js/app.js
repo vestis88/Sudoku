@@ -352,7 +352,7 @@
 
   // One-shot animation classes are removed once they finish.
   document.addEventListener('animationend', (e) => {
-    ['pop', 'wiggle', 'just-done', 'wave', 'rainbow'].forEach((c) => e.target.classList.remove(c));
+    ['pop', 'wiggle', 'just-done', 'wave', 'rainbow', 'auto'].forEach((c) => e.target.classList.remove(c));
   });
 
   function burst(el, count) {
@@ -1227,8 +1227,10 @@
   }
 
   // Snapshot taken before every move so undo can restore values and notes.
+  // Snapshot of values and notes, so one undo can also revert squares that
+  // were filled in automatically from notes.
   function pushHistory(i) {
-    game.history.push({ i, prev: game.values[i], notes: game.notes.slice() });
+    game.history.push({ i, prev: game.values[i], notes: game.notes.slice(), values: game.values.slice() });
     if (game.history.length > 500) game.history.shift();
   }
 
@@ -1262,6 +1264,8 @@
     game.hinted = game.hinted.filter((h) => h !== i);
     if (o.hint) game.hinted.push(i);
     cellEls[i].classList.remove('correct', 'wrong');
+    // Squares whose notes this answer narrows down to a single number
+    const narrowed = [];
     if (v) {
       // A locked-in answer replaces the cell's notes and removes that
       // number from the notes of its row, column and box.
@@ -1269,7 +1273,9 @@
       const bit = 1 << v;
       for (const p of geo().peers[i]) {
         if (game.notes[p] & bit) {
+          const before = noteDigits(game.notes[p]).length;
           game.notes[p] &= ~bit;
+          if (before >= 2 && noteDigits(game.notes[p]).length === 1) narrowed.push(p);
           renderCell(p);
         }
       }
@@ -1285,6 +1291,28 @@
     updatePad(true);
     saveGame();
     afterMove();
+    if (!o.auto) autoFilled = 0;
+    autoFillFrom(narrowed);
+    if (!o.auto && autoFilled && !game.done) {
+      toast(`✨ ${autoFilled} ${autoFilled === 1 ? 'ruta fylldes' : 'rutor fylldes'} i från dina anteckningar`);
+    }
+  }
+
+  /*
+   * A square left with exactly one note after an answer is filled in with
+   * that number. This can chain, since each filled square clears notes too.
+   * The chain belongs to the move that started it (one undo reverts all).
+   */
+  let autoFilled = 0;
+  function autoFillFrom(cells) {
+    for (const p of cells) {
+      if (game.done) return;
+      const left = noteDigits(game.notes[p]);
+      if (game.values[p] || game.puzzle[p] || left.length !== 1 || doneDigits.has(left[0])) continue;
+      autoFilled++;
+      setValue(p, left[0], { record: false, auto: true });
+      replayAnimation(cellEls[p], 'auto');
+    }
   }
 
   function isSolved() {
@@ -1331,9 +1359,10 @@
       return;
     }
     selected = last.i;
-    game.values[last.i] = last.prev;
+    if (last.values) game.values = last.values;
+    else game.values[last.i] = last.prev;
     if (last.notes) game.notes = last.notes;
-    game.hinted = game.hinted.filter((h) => h !== last.i);
+    game.hinted = game.hinted.filter((h) => h !== last.i && game.values[h]);
     cellEls[last.i].classList.remove('correct', 'wrong');
     renderAllCells();
     if (last.prev) replayAnimation(cellEls[last.i], 'pop');

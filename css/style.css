@@ -1254,6 +1254,17 @@ button:focus-visible {
   animation: shake 0.4s ease;
 }
 
+/* Filled in automatically from notes: a short golden glow */
+.cell.auto {
+  animation: auto-fill 0.9s ease;
+}
+
+@keyframes auto-fill {
+  0% { transform: scale(0.6); box-shadow: 0 0 0 0 var(--gold); }
+  40% { transform: scale(1.12); box-shadow: 0 0 0 4px var(--gold), 0 0 16px var(--gold); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 transparent; }
+}
+
 .cell.wave {
   animation: wave 0.7s ease both;
   animation-delay: calc(var(--i) * 70ms);

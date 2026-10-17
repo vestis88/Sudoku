@@ -23,7 +23,9 @@ no build step, no dependencies, works offline and collects no data.
   candidates; the big buttons enter answers. Notes are small, italic and
   shrink as more are added.
   Entering an answer replaces the notes in that square and removes that number
-  from the notes in the same row, column and box.
+  from the notes in the same row, column and box (in Tectonic: region and
+  touching squares). If that leaves a square with a single note, it is filled
+  in automatically, which can chain; one *Ångra* undoes the whole chain.
 * **Players and leaderboard**: pick who is playing (Wille, Johan, Bim or
   Frans) before starting. Tap ✏️ on a player to choose an avatar (🌈 and 31
   more), saved on each device. Solve times are saved and the start screen shows the
