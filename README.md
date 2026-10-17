@@ -23,10 +23,7 @@ no build step, no dependencies, works offline and collects no data.
   candidates; the big buttons enter answers. Notes are small, italic and
   shrink as more are added.
   Entering an answer replaces the notes in that square and removes that number
-  from the notes in the same row, column and box (in Tectonic: region and
-  touching squares). If that leaves a square with a single note, it is filled
-  in automatically, which can chain; one *Ångra* undoes the whole chain.
-  This can be switched off in ⚙️ settings (*Fyll i automatiskt*).
+  from the notes in the same row, column and box.
 * **Players and leaderboard**: pick who is playing (Wille, Johan, Bim or
   Frans) before starting. Tap ✏️ on a player to choose an avatar (🌈 and 31
   more), saved on each device. Solve times are saved and the start screen shows the
@@ -45,7 +42,7 @@ no build step, no dependencies, works offline and collects no data.
   *Fortsätt* jumps back into the latest one, and *📂 Sparade spel* lists all
   of them (who, board, time, progress) to continue or remove.
 * Undo, erase, hints, confetti when you win and sounds (can be muted).
-* **Themes** (⚙️ settings on the start screen): 🌈 Färgglad, 🚀 Rymd and 🍬 Godis for
+* **Themes** (🎨 on the start screen): 🌈 Färgglad, 🚀 Rymd and 🍬 Godis for
   kids, 🖋️ Elegant for grown-ups and ⬜ Enkel, a plain black-and-white look
   with no animations. The choice is remembered on each device.
 * Each number has its own colour (in the kids' themes), and the layout adapts to phones, tablets

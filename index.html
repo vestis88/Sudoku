@@ -31,7 +31,7 @@
 
   <!-- Start screen -->
   <section id="home" class="screen home">
-    <button id="btn-theme" class="round-btn theme-btn" aria-label="Inställningar">⚙️</button>
+    <button id="btn-theme" class="round-btn theme-btn" aria-label="Välj tema">🎨</button>
     <h1 class="logo" aria-label="Sudoku">
       <span class="logo-word" id="logo"></span>
     </h1>
@@ -162,15 +162,7 @@
   <!-- Theme picker -->
   <div id="theme-picker" class="overlay" hidden>
     <div class="picker-card" role="dialog" aria-modal="true" aria-labelledby="theme-title">
-      <h2 id="theme-title">Inställningar</h2>
-      <label class="setting">
-        <span class="setting-text">
-          <strong>Fyll i automatiskt</strong>
-          <small>När en ruta bara har en anteckning kvar efter ett svar fylls den i.</small>
-        </span>
-        <input id="opt-autofill" type="checkbox" class="switch" />
-      </label>
-      <h3 class="setting-head">Tema</h3>
+      <h2 id="theme-title">Välj tema</h2>
       <div id="theme-grid" class="theme-grid" role="radiogroup" aria-label="Teman"></div>
       <button id="theme-close" class="big-btn secondary">Stäng</button>
     </div>
