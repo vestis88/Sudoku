@@ -48,7 +48,7 @@
     },
   };
 
-  const prefs = Object.assign({ mode: 'mini', sound: true }, store.get(PREF_KEY) || {});
+  const prefs = Object.assign({ mode: 'mini', sound: true, autoFill: true }, store.get(PREF_KEY) || {});
 
   const LB = window.Leaderboard;
   const results = LB.create(window.SUDOKU_FIREBASE);
@@ -1292,7 +1292,7 @@
     saveGame();
     afterMove();
     if (!o.auto) autoFilled = 0;
-    autoFillFrom(narrowed);
+    if (prefs.autoFill) autoFillFrom(narrowed);
     if (!o.auto && autoFilled && !game.done) {
       toast(`✨ ${autoFilled} ${autoFilled === 1 ? 'ruta fylldes' : 'rutor fylldes'} i från dina anteckningar`);
     }
@@ -1659,6 +1659,11 @@
     });
     $('#picker-close').addEventListener('click', closePicker);
     $('#btn-theme').addEventListener('click', openThemePicker);
+    $('#opt-autofill').checked = prefs.autoFill;
+    $('#opt-autofill').addEventListener('change', (e) => {
+      prefs.autoFill = e.target.checked;
+      savePrefs();
+    });
     $('#theme-close').addEventListener('click', () => ($('#theme-picker').hidden = true));
     $('#theme-picker').addEventListener('click', (e) => {
       if (e.target.id === 'theme-picker') $('#theme-picker').hidden = true;
