@@ -14,8 +14,9 @@ no build step, no dependencies, works offline and collects no data.
 * **Three levels**: Easy 🐣, Medium 🦊 and Hard 🦁. Easy and Medium puzzles can
   always be solved with simple logic, without guessing. Every puzzle has
   exactly one solution.
-* **Check at any time**: every number you entered turns **green** (right) or
-  **red** (wrong) for 3 seconds.
+* **Check (Kolla)**: every number you entered turns **green** (right) or
+  **red** (wrong) for 3 seconds. After a check, Kolla rests for 2 minutes of
+  game time (the button counts down), so it can't be used to guess.
 * **Numbers used up**: each number button shows how many are left. When all of
   one number are on the board, its button turns gold with a ⭐, sparkles fly and
   the numbers on the board do a wave.
@@ -37,7 +38,8 @@ no build step, no dependencies, works offline and collects no data.
   "NYTT REKORD!" celebration with confetti cannons and a fanfare.
 * **Stämpla (stamp)**: turn on 📌, pick a number on the answer or note row,
   then every square you tap gets that number (tap again to remove it).
-  Long-press a square to add the stamped number as a note instead. Sudda can
+  Long-press a square for the other kind: an answer stamp adds a note, a note
+  stamp writes the answer. Sudda can
   be stamped too, to clear square after square.
   Numbers equal to the selection or the stamp are shown in bold.
 * **Pause and resume**: every unfinished game is saved on the device.

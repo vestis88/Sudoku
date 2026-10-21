@@ -1175,22 +1175,18 @@
 
   const LONG_PRESS_MS = 450;
 
-  // Writes the stamp into cell i. A long press with a number stamp toggles
-  // that number as a note instead of the answer.
+  // Writes the stamp into cell i. A long press does the opposite kind: an
+  // answer stamp adds a note, a note stamp writes the answer.
   function applyStamp(i, long) {
     if (!stampMode || !stamp || !game || game.done) return;
     selected = i;
-    if (stamp.erase) {
-      erase();
-    } else if (stamp.note || long) {
-      if (long) {
-        replayAnimation(cellEls[i], 'pop');
-        if (navigator.vibrate) navigator.vibrate(15);
-      }
-      placeNote(stamp.d);
-    } else {
-      placeAnswer(stamp.d);
+    if (stamp.erase) return erase();
+    if (long) {
+      replayAnimation(cellEls[i], 'pop');
+      if (navigator.vibrate) navigator.vibrate(15);
     }
+    if (stamp.note !== long) placeNote(stamp.d);
+    else placeAnswer(stamp.d);
   }
 
   /* ---------------- Stamp (Stämpla) ---------------- */
@@ -1397,8 +1393,34 @@
     cellEls.forEach((el) => el.classList.remove('correct', 'wrong'));
   }
 
+  /* Kolla can be used once every two minutes of game time. */
+  const CHECK_COOLDOWN_MS = 2 * 60 * 1000;
+
+  function checkWaitMs() {
+    if (!game || game.lastCheckAt == null) return 0;
+    return Math.max(0, CHECK_COOLDOWN_MS - (elapsedMs() - game.lastCheckAt));
+  }
+
+  function renderCheckButton() {
+    const wait = checkWaitMs();
+    const btn = $('#btn-check');
+    const left = formatTime(Math.ceil(wait / 1000) * 1000);
+    btn.classList.toggle('cooling', wait > 0);
+    btn.style.setProperty('--cool', `${(wait / CHECK_COOLDOWN_MS) * 100}%`);
+    btn.querySelector('.check-icon').textContent = wait ? '⏳' : '✓';
+    btn.querySelector('.check-label').textContent = wait ? left : 'Kolla';
+    btn.setAttribute('aria-label', wait ? `Kolla igen om ${left}` : 'Kolla');
+  }
+
   function check() {
     if (!game || game.done) return;
+    const wait = checkWaitMs();
+    if (wait) {
+      Sound.nope();
+      replayAnimation($('#btn-check'), 'wiggle');
+      toast(`Du kan kolla igen om ${formatTime(Math.ceil(wait / 1000) * 1000)} ⏳`);
+      return;
+    }
     clearChecks();
     let right = 0;
     let wrong = 0;
@@ -1413,6 +1435,9 @@
       toast('Fyll i några siffror först! ✏️');
       return;
     }
+    game.lastCheckAt = elapsedMs(); // start the cooldown
+    saveGame();
+    renderCheckButton();
     if (wrong === 0) {
       Sound.good();
       const cheer = CHEERS[Math.floor(Math.random() * CHEERS.length)];
@@ -1459,6 +1484,7 @@
   function renderClock() {
     if (!game) return;
     $('#timer-time').textContent = formatTime(game.done ? game.elapsed : elapsedMs());
+    renderCheckButton();
   }
 
   function startClock() {
