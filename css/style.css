@@ -1035,6 +1035,7 @@ button:focus-visible {
   display: grid;
   place-items: center;
   transition: background-color 0.3s, box-shadow 0.2s, transform 0.15s;
+  -webkit-touch-callout: none; /* no iOS menu on long press */
 }
 
 .cell.given {
@@ -1403,7 +1404,8 @@ button:focus-visible {
 }
 
 .pad-btn.stamped,
-.note-btn.stamped {
+.note-btn.stamped,
+.tool.stamped {
   transform: translateY(-4px);
   box-shadow: 0 0 0 3px var(--sel-ring), 0 6px 14px color-mix(in srgb, var(--sel-ring) 55%, transparent);
 }

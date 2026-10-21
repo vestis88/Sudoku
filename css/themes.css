@@ -399,7 +399,9 @@
 [data-theme='elegant'] .pad-btn.stamped,
 [data-theme='plain'] .pad-btn.stamped,
 [data-theme='elegant'] .note-btn.stamped,
-[data-theme='plain'] .note-btn.stamped {
+[data-theme='plain'] .note-btn.stamped,
+[data-theme='elegant'] .tool.stamped,
+[data-theme='plain'] .tool.stamped {
   transform: translateY(-3px);
   box-shadow: 0 0 0 3px var(--sel-ring);
 }

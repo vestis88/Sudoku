@@ -878,13 +878,36 @@
     cell.className = 'cell';
     cell.dataset.i = i;
     cell.setAttribute('role', 'gridcell');
+    // Normally a touch selects at once. While stamping, the stamp is applied
+    // when the finger lifts (short tap) or after holding (long press = note).
+    let pressTimer = null;
+    const cancelPress = () => {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    };
     cell.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       select(i);
+      if (!stampMode || !stamp) return;
+      cancelPress();
+      pressTimer = setTimeout(() => {
+        pressTimer = null;
+        applyStamp(i, true);
+      }, LONG_PRESS_MS);
     });
-    // Keyboard activation only (detail 0): a tap already selected the cell on
-    // pointerdown, and selecting twice would undo a stamp right away.
-    cell.addEventListener('click', (e) => e.detail === 0 && select(i));
+    cell.addEventListener('pointerup', () => {
+      if (!pressTimer) return;
+      cancelPress();
+      applyStamp(i, false);
+    });
+    cell.addEventListener('pointercancel', cancelPress);
+    cell.addEventListener('contextmenu', (e) => e.preventDefault());
+    // Keyboard activation only (detail 0); touches and clicks are handled above.
+    cell.addEventListener('click', (e) => {
+      if (e.detail !== 0) return;
+      select(i);
+      applyStamp(i, false);
+    });
     return cell;
   }
 
@@ -1090,7 +1113,7 @@
 
   function renderHighlights() {
     const peers = selected >= 0 ? geo().highlightSets[selected] : null;
-    const selVal = stamp ? stamp.d : selected >= 0 ? game.values[selected] : 0;
+    const selVal = stamp ? stamp.d || 0 : selected >= 0 ? game.values[selected] : 0;
     for (let i = 0; i < cellEls.length; i++) {
       const el = cellEls[i];
       const related = !!peers && peers.has(i);
@@ -1148,9 +1171,25 @@
     if (!game || game.done) return;
     selected = i;
     renderHighlights();
-    if (stampMode && stamp) {
-      if (stamp.note) placeNote(stamp.d);
-      else placeAnswer(stamp.d);
+  }
+
+  const LONG_PRESS_MS = 450;
+
+  // Writes the stamp into cell i. A long press with a number stamp toggles
+  // that number as a note instead of the answer.
+  function applyStamp(i, long) {
+    if (!stampMode || !stamp || !game || game.done) return;
+    selected = i;
+    if (stamp.erase) {
+      erase();
+    } else if (stamp.note || long) {
+      if (long) {
+        replayAnimation(cellEls[i], 'pop');
+        if (navigator.vibrate) navigator.vibrate(15);
+      }
+      placeNote(stamp.d);
+    } else {
+      placeAnswer(stamp.d);
     }
   }
 
@@ -1169,6 +1208,14 @@
     renderStamp(); // the ring on the pad shows the stamp; no message needed
   }
 
+  // Sudda: in stamp mode it becomes an "erase" stamp, otherwise it erases
+  // the selected cell.
+  function eraseButton() {
+    if (!stampMode) return erase();
+    stamp = stamp && stamp.erase ? null : { erase: true };
+    renderStamp();
+  }
+
   function renderStamp() {
     const btn = $('#btn-stamp');
     btn.classList.toggle('on', stampMode);
@@ -1176,6 +1223,7 @@
     $('#board').classList.toggle('stamping', !!stamp);
     Object.entries(padEls).forEach(([d, el]) => el.classList.toggle('stamped', !!stamp && !stamp.note && stamp.d === +d));
     Object.entries(noteEls).forEach(([d, el]) => el.classList.toggle('stamped', !!stamp && stamp.note && stamp.d === +d));
+    $('#btn-erase').classList.toggle('stamped', !!stamp && !!stamp.erase);
     if (game) renderHighlights();
   }
 
@@ -1673,7 +1721,7 @@
       renderSoundButton();
     });
     $('#btn-undo').addEventListener('click', undo);
-    $('#btn-erase').addEventListener('click', erase);
+    $('#btn-erase').addEventListener('click', eraseButton);
     $('#btn-hint').addEventListener('click', hint);
     $('#btn-stamp').addEventListener('click', () => setStampMode(!stampMode));
     $('#btn-check').addEventListener('click', check);

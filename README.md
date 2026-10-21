@@ -37,6 +37,8 @@ no build step, no dependencies, works offline and collects no data.
   "NYTT REKORD!" celebration with confetti cannons and a fanfare.
 * **Stämpla (stamp)**: turn on 📌, pick a number on the answer or note row,
   then every square you tap gets that number (tap again to remove it).
+  Long-press a square to add the stamped number as a note instead. Sudda can
+  be stamped too, to clear square after square.
   Numbers equal to the selection or the stamp are shown in bold.
 * **Pause and resume**: every unfinished game is saved on the device.
   *Fortsätt* jumps back into the latest one, and *📂 Sparade spel* lists all
