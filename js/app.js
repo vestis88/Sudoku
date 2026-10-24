@@ -1173,7 +1173,7 @@
     renderHighlights();
   }
 
-  const LONG_PRESS_MS = 450;
+  const LONG_PRESS_MS = 225;
 
   // Writes the stamp into cell i. A long press does the opposite kind: an
   // answer stamp adds a note, a note stamp writes the answer.
