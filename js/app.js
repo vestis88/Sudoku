@@ -1199,8 +1199,9 @@
     if (on) toast('Stämpla 📌 – välj en siffra, tryck sedan på rutor');
   }
 
+  // Tapping the chosen stamp again keeps it; only another choice replaces it.
   function chooseStamp(d, note) {
-    stamp = stamp && stamp.d === d && stamp.note === note ? null : { d, note };
+    stamp = { d, note };
     renderStamp(); // the ring on the pad shows the stamp; no message needed
   }
 
@@ -1208,7 +1209,7 @@
   // the selected cell.
   function eraseButton() {
     if (!stampMode) return erase();
-    stamp = stamp && stamp.erase ? null : { erase: true };
+    stamp = { erase: true };
     renderStamp();
   }
 

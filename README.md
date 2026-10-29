@@ -39,8 +39,9 @@ no build step, no dependencies, works offline and collects no data.
 * **Stämpla (stamp)**: turn on 📌, pick a number on the answer or note row,
   then every square you tap gets that number (tap again to remove it).
   Long-press a square for the other kind: an answer stamp adds a note, a note
-  stamp writes the answer. Sudda can
-  be stamped too, to clear square after square.
+  stamp writes the answer. Sudda can be stamped too, to clear square after
+  square. Tapping the chosen stamp again keeps it; pick another or turn off
+  📌 to change.
   Numbers equal to the selection or the stamp are shown in bold.
 * **Pause and resume**: every unfinished game is saved on the device.
   *Fortsätt* jumps back into the latest one, and *📂 Sparade spel* lists all
